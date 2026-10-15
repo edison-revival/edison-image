@@ -1,0 +1,11 @@
+[Unit]
+Description=Format the config partition on first use
+DefaultDependencies=no
+BindsTo=dev-disk-by\x2dpartlabel-config.device
+After=dev-disk-by\x2dpartlabel-config.device
+Before=var-lib-edison.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/edison-config init

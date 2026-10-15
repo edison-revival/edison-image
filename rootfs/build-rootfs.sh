@@ -57,9 +57,10 @@ mmdebstrap \
     --customize-hook='test -e "$1/usr/lib/firmware/brcm/brcmfmac43340-sdio.bin" || { echo "firmware-brcm80211 lacks brcmfmac43340-sdio.bin" >&2; exit 1; }' \
     --customize-hook='install -d "$1/usr/lib/edison/acpi" && install -m 0644 -t "$1/usr/lib/edison/acpi/" /work/acpi/*.aml' \
     --customize-hook='chmod 0755 "$1"/usr/local/sbin/edison-*' \
-    --customize-hook='mkdir -p "$1/factory"' \
-    --customize-hook='for f in /usr/bin/login /usr/sbin/agetty /usr/sbin/sshd /usr/sbin/wpa_supplicant /usr/sbin/rfkill /usr/bin/gpioset /usr/sbin/i2cdetect; do test -x "$1$f" || { echo "missing $f in rootfs" >&2; exit 1; }; done' \
-    --customize-hook='chroot "$1" systemctl enable systemd-networkd systemd-resolved systemd-timesyncd edison-acpi-tables edison-gadget edison-bt-addr rfkill-unblock wpa_supplicant@wlan0 serial-getty@ttyGS0' \
+    --customize-hook='mkdir -p "$1/factory" "$1/var/lib/edison"' \
+    --customize-hook='ln -sf /var/lib/edison/wifi/wpa_supplicant-wlan0.conf "$1/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"' \
+    --customize-hook='for f in /usr/bin/login /usr/sbin/agetty /usr/sbin/sshd /usr/sbin/wpa_supplicant /usr/sbin/rfkill /usr/bin/gpioset /usr/sbin/i2cdetect /usr/sbin/mkfs.ext4 /usr/sbin/e2fsck /usr/bin/script /usr/bin/fw_setenv; do test -x "$1$f" || { echo "missing $f in rootfs" >&2; exit 1; }; done' \
+    --customize-hook='chroot "$1" systemctl enable systemd-networkd systemd-resolved systemd-timesyncd edison-acpi-tables edison-gadget edison-bt-addr edison-config-restore edison-config-save.path rfkill-unblock wpa_supplicant@wlan0 serial-getty@ttyGS0' \
     --customize-hook='chroot "$1" groupadd -r -f gpio' \
     --customize-hook="chroot \"\$1\" useradd -m -s /bin/bash -G sudo,netdev,plugdev,dialout,gpio,i2c $USER_NAME" \
     --customize-hook='find "$1/etc/systemd" "$1/etc/udev/rules.d" -type f -perm /022 -print -exec false {} + >&2 || { echo "group/world-writable config files in rootfs" >&2; exit 1; }' \
@@ -73,19 +74,20 @@ mmdebstrap \
     "$SUITE" "$ROOT" "$MIRROR"
 
 # ext4 image: used space + 25% + 64 MiB headroom; it grows to the partition on first boot.
+# The rootfs partition is the rest of the eMMC (about 3.5 GiB); keep the image well below.
 used_kib=$(du -sk "$ROOT" | cut -f1)
 size_kib=$(( used_kib * 125 / 100 + 65536 ))
-max_kib=$(( 1536 * 1024 ))
+max_kib=$(( 3000 * 1024 ))
 if [ "$size_kib" -gt "$max_kib" ]; then
-    echo "rootfs (${size_kib} KiB) doesn't fit the 1536 MiB rootfs partition" >&2
+    echo "rootfs (${size_kib} KiB) is too big for the rootfs partition" >&2
     exit 1
 fi
 rm -f /out/rootfs.ext4
 mke2fs -q -t ext4 -L rootfs -d "$ROOT" /out/rootfs.ext4 "${size_kib}k"
 
-# FAT boot partition (32 MiB) with the kernel.
+# FAT boot partition (64 MiB) with the kernel.
 rm -f /out/boot.vfat
-mkfs.vfat -n BOOT -C /out/boot.vfat 32768 >/dev/null
+mkfs.vfat -n BOOT -C /out/boot.vfat 65536 >/dev/null
 mcopy -i /out/boot.vfat /in/kernel/vmlinuz ::vmlinuz
 
 # Redundant U-Boot environment (comments and blank lines stripped first).

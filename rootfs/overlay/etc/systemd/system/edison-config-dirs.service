@@ -1,0 +1,10 @@
+[Unit]
+Description=Create directories on the config partition
+DefaultDependencies=no
+RequiresMountsFor=/var/lib/edison
+Before=var-lib-bluetooth.mount local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/edison-config dirs

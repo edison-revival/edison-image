@@ -1,0 +1,7 @@
+[Unit]
+Description=Save settings to the config partition
+RequiresMountsFor=/var/lib/edison
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/edison-config save

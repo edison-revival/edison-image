@@ -1,7 +1,8 @@
 [Unit]
 Description=USB gadget (NCM ethernet + ACM serial)
-After=sys-kernel-config.mount systemd-modules-load.service
+After=sys-kernel-config.mount systemd-modules-load.service factory.mount
 Requires=sys-kernel-config.mount
+Wants=factory.mount
 Before=network-pre.target
 Wants=network-pre.target
 

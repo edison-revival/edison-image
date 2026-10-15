@@ -43,9 +43,15 @@ echo 0xEF > bDeviceClass   # Miscellaneous / IAD, needed for composite NCM + ACM
 echo 0x02 > bDeviceSubClass
 echo 0x01 > bDeviceProtocol
 
-# Stable per-board MAC addresses and serial number, derived from the machine ID
-# (locally administered, unicast).
-hash=$(md5sum /etc/machine-id | cut -c1-24)
+# Stable per-board MAC addresses and serial number (locally administered, unicast),
+# derived from the factory serial number so they survive reflashing; the machine ID (new
+# with every flash) is only a fallback.
+if [ -s /factory/serial_number ]; then
+    id_source=/factory/serial_number
+else
+    id_source=/etc/machine-id
+fi
+hash=$(md5sum "$id_source" | cut -c1-24)
 mac() { echo "$1" | sed 's/\(..\)/\1:/g; s/:$//'; }
 dev_addr=$(mac "02$(echo "$hash" | cut -c1-10)")
 host_addr=$(mac "06$(echo "$hash" | cut -c11-20)")

@@ -1,0 +1,14 @@
+#!/bin/sh
+# Reboot into DFU mode for flashing: U-Boot then waits for dfu-util indefinitely instead
+# of its normal few-second window. The request is one-shot; U-Boot clears it.
+set -eu
+
+if [ "$(id -u)" != 0 ]; then
+    echo "run as root: sudo edison-dfu" >&2
+    exit 1
+fi
+# Check we can read the environment before writing to it.
+fw_printenv bootcmd >/dev/null
+fw_setenv dfu_once 1
+echo "Rebooting into DFU mode; run flash.py on the computer."
+systemctl reboot

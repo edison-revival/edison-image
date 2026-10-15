@@ -1,0 +1,20 @@
+# Save users, passwords, hostname, time zone and locale to the config partition whenever
+# they change. Not ordered after edison-config-restore: path units start in early boot
+# (paths.target), before restore can run, and ordering them after it forms a cycle that
+# makes systemd skip the restore. Saves triggered by the restore itself are harmless.
+[Unit]
+Description=Watch for settings to save to the config partition
+
+[Path]
+PathChanged=/etc/shadow
+PathChanged=/etc/passwd
+PathChanged=/etc/group
+PathChanged=/etc/hostname
+PathChanged=/etc/localtime
+PathChanged=/etc/locale.gen
+PathChanged=/etc/default/locale
+# Written by locale-gen after locale.gen changes; triggers a second save with the result.
+PathChanged=/usr/lib/locale/locale-archive
+
+[Install]
+WantedBy=multi-user.target

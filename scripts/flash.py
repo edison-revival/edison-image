@@ -38,6 +38,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 DFU_UTIL = ["dfu-util"]  # command prefix; the tests point this at a fake
 WIDTH = 79  # keep output within 80 columns
+RESET_WAIT = 15  # seconds to wait for the DFU device to go away after a reset
 
 # DFU alt setting -> file in the image directory (U-Boot comes from --uboot).
 PARTS = [
@@ -57,6 +58,10 @@ PROGRESS_RE = re.compile(r"\]\s+(\d+)%\s+(\d+) bytes")
 
 class Interrupted(Exception):
     pass
+
+
+class MissedWindow(Exception):
+    """The board left DFU mode before dfu-util opened it; nothing was written."""
 
 
 interrupted = False
@@ -112,14 +117,27 @@ def dfu_present() -> bool:
     return f"Found DFU: [{DEVICE}]" in out
 
 
-def wait_for_device(timeout: int) -> None:
-    say(
-        f"Waiting up to {timeout} s for the Edison in DFU mode ({DEVICE}).",
-        "Plug in J16 (SW1 towards the micro-USB ports), then reboot the board:",
-        "  'sudo reboot' if it runs Linux, otherwise power-cycle it.",
-        "Avoid the reset button while Linux runs: it can wedge the Arduino",
-        "kit's I/O expander until the next power cycle.",
-    )
+def wait_for_device(timeout: int, intro: bool = True) -> None:
+    if intro:
+        say(
+            "",
+            f"Waiting up to {timeout} s for the Edison in DFU mode ({DEVICE}):",
+            "",
+            "  1. Plug a USB cable into J16, with SW1 towards the micro-USB ports.",
+            "  2. On the board, run 'sudo edison-dfu' (edison-image 0.1 and later),",
+            "     or 'sudo reboot', or power-cycle it.",
+            "",
+            "  Don't use the reset button while Linux is running: it can wedge",
+            "  the Arduino kit's I/O expander until the next power cycle.",
+            "",
+        )
+    else:
+        # The board is still enumerated as DFU until its reset takes effect.
+        deadline = time.monotonic() + RESET_WAIT
+        while dfu_present() and time.monotonic() < deadline:
+            if interrupted:
+                raise Interrupted
+            time.sleep(0.2)
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if interrupted:
@@ -216,28 +234,74 @@ def flash_part(
         log.append(buf.decode(errors="replace"))
 
     if not download_succeeded(log):
+        if missed_window(log):
+            raise MissedWindow(alt)
         print()
         print("\n".join(line for line in log if line.strip()), file=sys.stderr)
         fail(f"flashing {alt} failed")
     status(f"  {alt:<12}done  {fmt_mib(size):>9}", end="\n")
 
 
+def missed_window(log: list[str]) -> bool:
+    """dfu-util lost the device before downloading anything (U-Boot's DFU window
+    closed while it was starting up). Nothing was written, so it's safe to retry."""
+    started = any(parse_progress(line) for line in log)
+    lost = any(
+        "No DFU capable USB device" in line or "LIBUSB_ERROR_NO_DEVICE" in line for line in log
+    )
+    return lost and not started
+
+
+def phases(plan: list[tuple[str, Path]]) -> list[list[tuple[str, Path]]]:
+    """Split the plan into U-Boot (+ environment) and the rest. The new environment
+    carries the partition layout, which U-Boot applies on the next boot, so the board
+    resets in between and boot/rootfs are written into the (possibly new) layout."""
+    first = [p for p in plan if p[0] in CRITICAL]
+    rest = [p for p in plan if p[0] not in CRITICAL]
+    return [ph for ph in (first, rest) if ph]
+
+
 def flash_all(plan: list[tuple[str, Path]], timeout: int) -> None:
     wait_for_device(timeout)
 
     total = sum(p.stat().st_size for _, p in plan)
-    say(f"Flashing {len(plan)} partitions, {fmt_mib(total)} in total. Ctrl+C to stop.")
+    say(f"Flashing {len(plan)} partitions, {fmt_mib(total)} in total. Ctrl+C to stop.", "")
     start = time.monotonic()
     done = 0
-    for i, (alt, path) in enumerate(plan):
-        flash_part(
-            alt, path, reset=(i == len(plan) - 1), done_before=done, total=total, start=start
-        )
-        done += path.stat().st_size
-        if interrupted and i < len(plan) - 1:
-            raise Interrupted(alt)
+    steps = phases(plan)
+    for n, phase in enumerate(steps):
+        if n > 0:
+            say(
+                "",
+                "Waiting for the board to come back. On the first flash of this image",
+                "it rewrites its partition table and resets once more.",
+                "",
+            )
+            try:
+                wait_for_device(timeout, intro=False)
+            except Interrupted:
+                raise Interrupted(steps[n - 1][-1][0]) from None
+        for i, (alt, path) in enumerate(phase):
+            while True:
+                try:
+                    flash_part(
+                        alt,
+                        path,
+                        reset=(i == len(phase) - 1),
+                        done_before=done,
+                        total=total,
+                        start=start,
+                    )
+                    break
+                except MissedWindow:
+                    status(f"  {alt:<12}missed the DFU window, nothing written", end="\n")
+                    say("", "The board left DFU mode before dfu-util could open it.")
+                    wait_for_device(timeout)
+            done += path.stat().st_size
+            if interrupted and (n < len(steps) - 1 or i < len(phase) - 1):
+                raise Interrupted(alt)
 
-    say(f"Done in {fmt_time(time.monotonic() - start)}. The board now resets and boots.")
+    say("", f"Done in {fmt_time(time.monotonic() - start)}. The board now resets and boots.")
 
 
 def build_plan(
@@ -274,8 +338,8 @@ def explain_interrupt(alt: str | None) -> None:
         say("\nCancelled before writing anything.")
     elif alt in CRITICAL:
         say(
-            f"\nStopped after {alt}. U-Boot and its settings are intact, but",
-            "the image is incomplete: run flash.py again.",
+            f"\nStopped after {alt}. U-Boot is intact, but the kernel and rootfs",
+            "weren't written: run flash.py again and reboot the board.",
         )
     else:
         say(

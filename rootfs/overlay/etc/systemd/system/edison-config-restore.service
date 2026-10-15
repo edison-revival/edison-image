@@ -1,0 +1,17 @@
+[Unit]
+Description=Restore settings from the config partition (and save them at shutdown)
+RequiresMountsFor=/var/lib/edison
+After=local-fs.target
+Before=systemd-user-sessions.service ssh.service network-pre.target avahi-daemon.service systemd-networkd.service
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/edison-config restore
+# SSH authorized_keys and the opt-in files list aren't watched for changes; save them (and
+# everything else) at every clean shutdown too.
+ExecStop=/usr/local/sbin/edison-config save
+
+[Install]
+WantedBy=multi-user.target

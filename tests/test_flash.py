@@ -140,11 +140,15 @@ class FlashTests(unittest.TestCase):
         ]
         self.saved_dfu = flash.DFU_UTIL
         flash.DFU_UTIL = FAKE
+        # The fake never disappears after a reset; don't wait long for it to.
+        self.saved_reset_wait = flash.RESET_WAIT
+        flash.RESET_WAIT = 0.3
         self.saved_env = dict(os.environ)
         os.environ["FAKE_DFU_LOG"] = str(self.log)
 
     def tearDown(self):
         flash.DFU_UTIL = self.saved_dfu
+        flash.RESET_WAIT = self.saved_reset_wait
         flash.interrupted = False
         os.environ.clear()
         os.environ.update(self.saved_env)
@@ -166,8 +170,8 @@ class FlashTests(unittest.TestCase):
         """Simulate Ctrl+C arriving just after the board appears."""
         original = flash.wait_for_device
 
-        def wait(timeout):
-            original(timeout)
+        def wait(timeout, intro=True):
+            original(timeout, intro)
             flash.interrupted = True
 
         flash.wait_for_device = wait
@@ -201,6 +205,20 @@ class FlashTests(unittest.TestCase):
         self.assertEqual(cm.exception.args, ("rootfs",))
         self.assertIn("rootfs      interrupted", self.output)
 
+    def test_ctrl_c_between_phases_names_the_last_written_partition(self):
+        original = flash.wait_for_device
+
+        def wait(timeout, intro=True):
+            if not intro:  # the wait between phases
+                flash.interrupted = True
+            original(timeout, intro)
+
+        flash.wait_for_device = wait
+        self.addCleanup(setattr, flash, "wait_for_device", original)
+        with self.assertRaises(flash.Interrupted) as cm:
+            self.run_flash()
+        self.assertEqual(cm.exception.args, ("u-boot0",))
+
     def test_interrupt_explanations_fit_80_columns(self):
         for alt in (None, "u-boot0", "rootfs"):
             out = io.StringIO()
@@ -209,14 +227,38 @@ class FlashTests(unittest.TestCase):
             for line in out.getvalue().splitlines():
                 self.assertLessEqual(len(line), 80, line)
 
-    def test_flashes_every_partition_and_resets_on_the_last(self):
+    def test_phases_split_u_boot_from_the_rest(self):
+        alts = [[alt for alt, _ in ph] for ph in flash.phases(self.plan)]
+        self.assertEqual(alts, [["u-boot0"], ["boot", "rootfs"]])
+        self.assertEqual(len(flash.phases(self.plan[1:])), 1)  # --only boot rootfs
+        self.assertEqual(len(flash.phases(self.plan[:1])), 1)  # --only u-boot0
+
+    def test_flashes_every_partition_resetting_after_each_phase(self):
         output = self.run_flash()
         calls = self.calls()
         self.assertEqual([c[c.index("-a") + 1] for c in calls], ["u-boot0", "boot", "rootfs"])
-        self.assertEqual(["-R" in c for c in calls], [False, False, True])
+        # Reset after U-Boot (to apply the new layout) and after the last partition.
+        self.assertEqual(["-R" in c for c in calls], [True, False, True])
+        self.assertIn("Waiting for the board to come back", output)
         self.assertIn("rootfs      done", output)
         self.assertIn("overall 100%", output)
         self.assertIn("Done in", output)
+
+    def test_missed_dfu_window_waits_and_retries(self):
+        marker = self.tmp / "miss-once"
+        marker.write_text("")
+        os.environ["FAKE_DFU_MISS"] = str(marker)
+        output = self.run_flash(plan=[self.plan[2]])
+        self.assertIn("missed the DFU window, nothing written", output)
+        self.assertIn("rootfs      done", output)
+        self.assertEqual(len(self.calls()), 2)  # the miss, then the real write
+
+    def test_missed_window_needs_no_progress(self):
+        lost = ["dfu-util: No DFU capable USB device available"]
+        progress = ["Download\t[==   ]  10%        1000 bytes"]
+        self.assertTrue(flash.missed_window(lost))
+        self.assertFalse(flash.missed_window(progress + lost))  # partly written: not safe
+        self.assertFalse(flash.missed_window(["dfu-util: Error during download"]))
 
     def test_nonzero_exit_after_complete_download_is_success(self):
         # The fake exits 74 after -R, like dfu-util's "can't detach".

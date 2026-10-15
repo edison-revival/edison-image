@@ -1,0 +1,224 @@
+#!/bin/sh
+# Settings that survive reflashing, kept on the config partition (/var/lib/edison).
+#
+#   edison-config init      format the config partition unless it is already ours
+#   edison-config restore   at boot: put saved users, passwords, hostname, time zone,
+#                           locale and network config back into the freshly flashed
+#                           rootfs
+#   edison-config save      after changes: copy them to the config partition
+#   edison-config wifi IF   make sure the WiFi config for IF exists (from the template)
+#
+# WiFi config and SSH host keys live on the config partition directly (see
+# wpa_supplicant@.service.d and ssh.service.d); users and the hostname are copied back
+# and forth, because their files in /etc get replaced rather than edited in place.
+set -eu
+
+STATE=/var/lib/edison
+DEV=/dev/disk/by-partlabel/config
+LABEL=edison-config
+
+init() {
+    if [ "$(blkid -s LABEL -o value "$DEV" 2>/dev/null || true)" = "$LABEL" ]; then
+        exit 0
+    fi
+    echo "Formatting the config partition ($DEV)"
+    mkfs.ext4 -q -F -m 0 -L "$LABEL" "$DEV"
+}
+
+# After the config partition is mounted: directories other units bind-mount.
+make_dirs() {
+    mkdir -p "$STATE/bluetooth"
+    chmod 0700 "$STATE/bluetooth"
+    if [ ! -f "$STATE/files.list" ]; then
+        cat > "$STATE/files.list" <<'EOF'
+# Extra files to keep across reflashes, one absolute path per line (e.g.
+# /etc/hosts or /var/spool/cron/crontabs/edison). Saved at shutdown and by
+# 'sudo edison-config save'; restored at boot over the freshly flashed rootfs.
+EOF
+    fi
+}
+
+save_users() {
+    d="$STATE/users"
+    mkdir -p "$d"
+    chmod 0700 "$d"
+    # Regular users and groups: UIDs/GIDs 1000-59999.
+    awk -F: '$3 >= 1000 && $3 < 60000' /etc/passwd > "$d/passwd.new"
+    awk -F: '$3 >= 1000 && $3 < 60000' /etc/group > "$d/group.new"
+    : > "$d/shadow.new"
+    : > "$d/memberships.new"
+    chmod 0600 "$d/shadow.new"
+    mkdir -p "$d/ssh"
+    cut -d: -f1,6 "$d/passwd.new" | while IFS=: read -r name home; do
+        grep "^$name:" /etc/shadow >> "$d/shadow.new" || true
+        primary=$(id -gn "$name")
+        groups=$(id -nG "$name" | tr ' ' '\n' | grep -vx "$primary" | paste -sd, -)
+        echo "$name:$groups" >> "$d/memberships.new"
+        # SSH public keys: /home is wiped by a reflash.
+        if [ -f "$home/.ssh/authorized_keys" ]; then
+            cp "$home/.ssh/authorized_keys" "$d/ssh/$name.authorized_keys"
+        else
+            rm -f "$d/ssh/$name.authorized_keys"
+        fi
+    done
+    for f in passwd group shadow memberships; do
+        mv "$d/$f.new" "$d/$f"
+    done
+}
+
+restore_users() {
+    d="$STATE/users"
+    [ -f "$d/passwd" ] || return 0
+    while IFS=: read -r name _ gid _; do
+        getent group "$name" >/dev/null || groupadd -g "$gid" "$name" || true
+    done < "$d/group"
+    while IFS=: read -r name _ uid gid gecos home shell; do
+        if ! getent passwd "$name" >/dev/null; then
+            useradd -M -u "$uid" -g "$gid" -c "$gecos" -d "$home" -s "$shell" "$name" || continue
+        fi
+        if [ ! -d "$home" ]; then
+            cp -a /etc/skel "$home"
+            chown -R "$name:" "$home"
+            chmod 0750 "$home"
+        fi
+        keys="$d/ssh/$name.authorized_keys"
+        if [ -f "$keys" ] && [ ! -f "$home/.ssh/authorized_keys" ]; then
+            install -d -m 0700 -o "$name" -g "$gid" "$home/.ssh"
+            install -m 0600 -o "$name" -g "$gid" "$keys" "$home/.ssh/authorized_keys"
+        fi
+    done < "$d/passwd"
+    while IFS=: read -r name hash lastchg _; do
+        usermod -p "$hash" "$name"
+        if [ -n "$lastchg" ]; then
+            chage -d "$lastchg" "$name"
+        fi
+    done < "$d/shadow"
+    while IFS=: read -r name groups; do
+        # Only groups that exist in this image.
+        keep=$(echo "$groups" | tr ',' '\n' | while read -r g; do
+            [ -n "$g" ] && getent group "$g" >/dev/null && echo "$g"
+        done | paste -sd, -)
+        usermod -G "$keep" "$name"
+    done < "$d/memberships"
+}
+
+save_timezone() {
+    # /etc/localtime -> /usr/share/zoneinfo/Area/City (timedatectl set-timezone)
+    target=$(readlink /etc/localtime 2>/dev/null || true)
+    case "$target" in
+        */zoneinfo/*) echo "${target#*/zoneinfo/}" > "$STATE/timezone" ;;
+        *) rm -f "$STATE/timezone" ;; # unset means UTC
+    esac
+}
+
+restore_timezone() {
+    [ -s "$STATE/timezone" ] || return 0
+    zone=$(cat "$STATE/timezone")
+    if [ -f "/usr/share/zoneinfo/$zone" ]; then
+        ln -sf "../usr/share/zoneinfo/$zone" /etc/localtime
+    fi
+}
+
+save_locale() {
+    d="$STATE/locale"
+    mkdir -p "$d"
+    for f in /etc/locale.gen /etc/default/locale; do
+        if [ -f "$f" ]; then
+            cp "$f" "$d/"
+        fi
+    done
+    # The generated locales: regenerating takes a while on this CPU, so keep the result.
+    archive=/usr/lib/locale/locale-archive
+    if [ -f "$archive" ] && ! cmp -s "$archive" "$d/locale-archive"; then
+        cp "$archive" "$d/locale-archive.new"
+        mv "$d/locale-archive.new" "$d/locale-archive"
+    fi
+}
+
+restore_locale() {
+    d="$STATE/locale"
+    [ -d "$d" ] || return 0
+    if [ -f "$d/locale.gen" ]; then
+        cp "$d/locale.gen" /etc/locale.gen
+    fi
+    if [ -f "$d/locale" ]; then
+        cp "$d/locale" /etc/default/locale
+    fi
+    if [ -f "$d/locale-archive" ]; then
+        mkdir -p /usr/lib/locale
+        cp "$d/locale-archive" /usr/lib/locale/locale-archive
+    fi
+    return 0
+}
+
+# Opt-in: extra files listed (one absolute path per line) in $STATE/files.list are copied
+# to $STATE/files/ and put back after a reflash, with their mode and owner.
+save_files() {
+    list="$STATE/files.list"
+    [ -f "$list" ] || return 0
+    rm -rf "$STATE/files.new"
+    mkdir -p "$STATE/files.new"
+    grep -E '^/' "$list" | while read -r path; do
+        if [ -e "$path" ]; then
+            cp -a --parents "$path" "$STATE/files.new/"
+        fi
+    done
+    rm -rf "$STATE/files"
+    mv "$STATE/files.new" "$STATE/files"
+}
+
+restore_files() {
+    [ -d "$STATE/files" ] || return 0
+    cp -a "$STATE/files/." /
+}
+
+# Set by restore when it finishes. Saving before the restore has run would record the
+# freshly flashed image's defaults over the saved settings.
+RESTORED=/run/edison-config.restored
+
+save() {
+    mountpoint -q "$STATE" || { echo "$STATE not mounted, not saving" >&2; exit 1; }
+    if [ ! -e "$RESTORED" ]; then
+        echo "settings haven't been restored this boot; not saving over them" >&2
+        exit 0
+    fi
+    save_users
+    cp /etc/hostname "$STATE/hostname"
+    save_timezone
+    save_locale
+    save_files
+}
+
+restore() {
+    mountpoint -q "$STATE" || { echo "$STATE not mounted, nothing to restore" >&2; exit 0; }
+    restore_users
+    restore_timezone
+    restore_locale
+    restore_files
+    if [ -s "$STATE/hostname" ]; then
+        cp "$STATE/hostname" /etc/hostname
+        hostname "$(cat /etc/hostname)"
+    fi
+    # Extra systemd-networkd config (e.g. a static address) the user put on config.
+    if [ -d "$STATE/network" ]; then
+        mkdir -p /run/systemd/network
+        cp "$STATE"/network/* /run/systemd/network/ 2>/dev/null || true
+    fi
+    touch "$RESTORED"
+}
+
+wifi() {
+    conf="$STATE/wifi/wpa_supplicant-$1.conf"
+    [ -f "$conf" ] && exit 0
+    mkdir -p "$STATE/wifi"
+    install -m 0600 /usr/share/edison/wpa_supplicant.conf "$conf"
+}
+
+case "${1:-}" in
+    init) init ;;
+    dirs) make_dirs ;;
+    save) save ;;
+    restore) restore ;;
+    wifi) wifi "${2:?interface}" ;;
+    *) echo "usage: $0 init|dirs|save|restore|wifi IFACE" >&2; exit 2 ;;
+esac

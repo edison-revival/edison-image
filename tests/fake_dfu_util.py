@@ -3,6 +3,8 @@
 Behaviour is controlled by environment variables:
   FAKE_DFU_ABSENT=1   -l finds no device
   FAKE_DFU_FAIL=alt   the download to this alt setting fails part-way
+  FAKE_DFU_MISS=file  if this file exists, the next download finds the device gone
+                      (a missed DFU window) and deletes the file
   FAKE_DFU_LOG=path   append each invocation's arguments to this file
 """
 
@@ -25,6 +27,16 @@ def main() -> int:
                 f'path="3-1.2", alt=7, name="rootfs", serial="x"'
             )
         return 0
+
+    miss = os.environ.get("FAKE_DFU_MISS")
+    if miss and os.path.exists(miss):
+        os.remove(miss)
+        print(
+            "dfu-util: Cannot open DFU device 8087:0a99 found on devnum 116 "
+            "(LIBUSB_ERROR_NO_DEVICE)"
+        )
+        print("dfu-util: No DFU capable USB device available")
+        return 74
 
     alt = args[args.index("-a") + 1]
     path = args[args.index("-D") + 1]
