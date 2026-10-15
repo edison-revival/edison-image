@@ -2,7 +2,7 @@
 # /dev/ttyGS0 (the USB serial port) itself as Serial.
 [Unit]
 Description=Arduino sketch
-After=edison-acpi-tables.service edison-gadget.service
+After=edison-acpi-tables.service edison-gadget.service edison-serial-hold.service
 ConditionPathExists=/var/lib/edison-sketch/sketch.elf
 
 [Service]
@@ -11,6 +11,9 @@ WorkingDirectory=/var/lib/edison-sketch
 ExecStart=/var/lib/edison-sketch/sketch.elf
 Restart=on-failure
 RestartSec=2
+# The sketch leaves loop() and exits on SIGTERM; one that never returns from loop() is
+# killed after this, rather than holding up a new upload for systemd's default 90 s.
+TimeoutStopSec=3
 
 [Install]
 WantedBy=multi-user.target

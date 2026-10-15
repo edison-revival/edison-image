@@ -1,0 +1,16 @@
+# Keep the USB serial port (/dev/ttyGS0, the sketch's Serial) open between sketches. The
+# gadget driver waits up to 15 s on the last close for output no host is reading, which
+# would hold up every sketch restart, and the host would see the port hang up each time.
+[Unit]
+Description=Keep the USB serial port open between Arduino sketches
+# edison-gadget creates the port (with the ACM function).
+Requires=edison-gadget.service
+After=edison-gadget.service
+
+[Service]
+ExecStart=/bin/sleep infinity
+StandardInput=file:/dev/ttyGS0
+StandardOutput=null
+
+[Install]
+WantedBy=multi-user.target

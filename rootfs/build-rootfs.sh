@@ -72,7 +72,7 @@ mmdebstrap \
     --customize-hook='. /work/edison-image-release; printf "\nedison-revival edison-image %s (kernel %s)\n%s\n\n" "$VERSION" "$KERNEL" "$URL" > "$1/etc/motd"' \
     --customize-hook='ln -sf /var/lib/edison/wifi/wpa_supplicant-wlan0.conf "$1/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"' \
     --customize-hook='for f in /usr/bin/login /usr/sbin/agetty /usr/sbin/sshd /usr/sbin/wpa_supplicant /usr/sbin/rfkill /usr/bin/gpioset /usr/sbin/i2cdetect /usr/sbin/mkfs.ext4 /usr/sbin/e2fsck /usr/bin/script /usr/bin/fw_setenv; do test -x "$1$f" || { echo "missing $f in rootfs" >&2; exit 1; }; done' \
-    --customize-hook='chroot "$1" systemctl enable systemd-networkd systemd-resolved systemd-timesyncd edison-acpi-tables edison-gadget edison-bt-addr edison-config-restore edison-config-save.path edison-sketch edison-sketch.path rfkill-unblock wpa_supplicant@wlan0' \
+    --customize-hook='chroot "$1" systemctl enable systemd-networkd systemd-resolved systemd-timesyncd edison-acpi-tables edison-gadget edison-bt-addr edison-config-restore edison-config-save.path edison-sketch edison-sketch.path edison-serial-hold rfkill-unblock wpa_supplicant@wlan0' \
     --customize-hook='chroot "$1" groupadd -r -f gpio' \
     --customize-hook="chroot \"\$1\" useradd -m -s /bin/bash -G sudo,netdev,plugdev,dialout,gpio,i2c $USER_NAME" \
     --customize-hook='find "$1/etc/systemd" "$1/etc/udev/rules.d" -type f -perm /022 -print -exec false {} + >&2 || { echo "group/world-writable config files in rootfs" >&2; exit 1; }' \
