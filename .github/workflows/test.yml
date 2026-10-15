@@ -24,6 +24,14 @@ jobs:
       - name: Unit tests
         run: uv run --no-project --python ${{ matrix.python }} python -W error::ResourceWarning -m unittest discover -s tests -v
 
+  ruff:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uvx ruff@0.14.0 format --check .
+      - run: uvx ruff@0.14.0 check .
+
   shellcheck:
     runs-on: ubuntu-24.04
     steps:

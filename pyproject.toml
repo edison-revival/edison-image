@@ -1,0 +1,8 @@
+# Only tool settings: the Python here is standalone scripts using the standard library.
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+# pycodestyle, pyflakes, isort, pyupgrade, bugbear, simplify
+select = ["E", "W", "F", "I", "UP", "B", "SIM"]

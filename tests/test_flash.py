@@ -43,8 +43,9 @@ class ParsingTests(unittest.TestCase):
 
     def test_download_succeeded(self):
         self.assertTrue(flash.download_succeeded(["Download done.", "Done!"]))
-        self.assertTrue(flash.download_succeeded(
-            ["Download done.", "Done!", "dfu-util: can't detach"]))
+        self.assertTrue(
+            flash.download_succeeded(["Download done.", "Done!", "dfu-util: can't detach"])
+        )
         self.assertFalse(flash.download_succeeded(["Done!"]))
         self.assertFalse(flash.download_succeeded(["Download done."]))
         self.assertFalse(flash.download_succeeded([]))
@@ -94,8 +95,9 @@ class FileTests(unittest.TestCase):
     def test_plan_order_and_uboot_from_images_dir(self):
         self.make_images()
         plan = flash.build_plan(self.images, None, None, self.work)
-        self.assertEqual([alt for alt, _ in plan],
-                         ["u-boot0", "u-boot-env0", "u-boot-env1", "boot", "rootfs"])
+        self.assertEqual(
+            [alt for alt, _ in plan], ["u-boot0", "u-boot-env0", "u-boot-env1", "boot", "rootfs"]
+        )
         self.assertEqual(plan[0][1], self.images / "u-boot.bin")
 
     def test_plan_only(self):
@@ -134,21 +136,76 @@ class FlashTests(unittest.TestCase):
 
     def tearDown(self):
         flash.DFU_UTIL = self.saved_dfu
+        flash.interrupted = False
         os.environ.clear()
         os.environ.update(self.saved_env)
 
-    def run_flash(self):
+    def run_flash(self, plan=None):
         out = io.StringIO()
-        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
-            flash.flash_all(self.plan, timeout=2)
-        return out.getvalue()
+        try:
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+                flash.flash_all(plan or self.plan, timeout=2)
+        finally:
+            self.output = out.getvalue()
+        return self.output
+
+    def calls(self):
+        lines = self.log.read_text().splitlines()
+        return [line.split() for line in lines if "-D" in line]
+
+    def press_ctrl_c_once_device_found(self):
+        """Simulate Ctrl+C arriving just after the board appears."""
+        original = flash.wait_for_device
+
+        def wait(timeout):
+            original(timeout)
+            flash.interrupted = True
+
+        flash.wait_for_device = wait
+        self.addCleanup(setattr, flash, "wait_for_device", original)
+
+    def test_output_fits_80_columns(self):
+        output = self.run_flash()
+        for line in output.replace("\r", "\n").splitlines():
+            self.assertLessEqual(len(line), 80, line)
+
+    def test_ctrl_c_while_waiting_writes_nothing(self):
+        os.environ["FAKE_DFU_ABSENT"] = "1"
+        flash.interrupted = True
+        with self.assertRaises(flash.Interrupted) as cm:
+            self.run_flash()
+        self.assertEqual(cm.exception.args, ())
+        self.assertFalse(self.log.exists() and self.calls())
+
+    def test_ctrl_c_during_u_boot_finishes_that_write_then_stops(self):
+        self.press_ctrl_c_once_device_found()
+        with self.assertRaises(flash.Interrupted) as cm:
+            self.run_flash()
+        self.assertEqual(cm.exception.args, ("u-boot0",))
+        self.assertEqual([c[c.index("-a") + 1] for c in self.calls()], ["u-boot0"])
+        self.assertIn("u-boot0     done", self.output)
+
+    def test_ctrl_c_during_rootfs_stops_dfu_util(self):
+        self.press_ctrl_c_once_device_found()
+        with self.assertRaises(flash.Interrupted) as cm:
+            self.run_flash(plan=[self.plan[2]])
+        self.assertEqual(cm.exception.args, ("rootfs",))
+        self.assertIn("rootfs      interrupted", self.output)
+
+    def test_interrupt_explanations_fit_80_columns(self):
+        for alt in (None, "u-boot0", "rootfs"):
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                flash.explain_interrupt(alt)
+            for line in out.getvalue().splitlines():
+                self.assertLessEqual(len(line), 80, line)
 
     def test_flashes_every_partition_and_resets_on_the_last(self):
         output = self.run_flash()
-        calls = [l.split() for l in self.log.read_text().splitlines() if "-D" in l]
+        calls = self.calls()
         self.assertEqual([c[c.index("-a") + 1] for c in calls], ["u-boot0", "boot", "rootfs"])
         self.assertEqual(["-R" in c for c in calls], [False, False, True])
-        self.assertIn("rootfs       done", output)
+        self.assertIn("rootfs      done", output)
         self.assertIn("overall 100%", output)
         self.assertIn("Done in", output)
 
@@ -160,8 +217,7 @@ class FlashTests(unittest.TestCase):
         os.environ["FAKE_DFU_FAIL"] = "boot"
         with self.assertRaises(SystemExit):
             self.run_flash()
-        calls = [l for l in self.log.read_text().splitlines() if "-D" in l]
-        self.assertEqual(len(calls), 2)  # never reached rootfs
+        self.assertEqual(len(self.calls()), 2)  # never reached rootfs
 
     def test_no_device_times_out(self):
         os.environ["FAKE_DFU_ABSENT"] = "1"

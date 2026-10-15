@@ -69,12 +69,17 @@ password.
   and uploads the images (rootfs xz-compressed) as an artifact. Pushing a `v*` tag also
   creates a release.
 - `.github/workflows/test.yml` runs the `flash.py` unit tests on Linux, macOS and Windows
-  (Python 3.9 and 3.13) and `shellcheck` on the shell scripts.
+  (Python 3.9 and 3.13), Ruff (format and lint, settings in `pyproject.toml`) and
+  `shellcheck`.
 
-Run the tests locally (standard library only, against a fake `dfu-util`):
+Locally (the tests use only the standard library and a fake `dfu-util`):
 
 ```
 uv run --no-project python -m unittest discover -s tests
+```
+
+```
+uvx ruff format . && uvx ruff check .
 ```
 
 ## Layout

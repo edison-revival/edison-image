@@ -20,16 +20,19 @@ def main() -> int:
 
     if "-l" in args:
         if os.environ.get("FAKE_DFU_ABSENT") != "1":
-            print(f'Found DFU: [{DEVICE}] ver=9999, devnum=5, cfg=1, intf=0, '
-                  f'path="3-1.2", alt=7, name="rootfs", serial="x"')
+            print(
+                f"Found DFU: [{DEVICE}] ver=9999, devnum=5, cfg=1, intf=0, "
+                f'path="3-1.2", alt=7, name="rootfs", serial="x"'
+            )
         return 0
 
     alt = args[args.index("-a") + 1]
     path = args[args.index("-D") + 1]
     size = os.path.getsize(path)
     out = sys.stdout
-    out.write("dfu-util 0.11\nOpening DFU capable USB device...\n"
-              "Copying data from PC to DFU device\n")
+    out.write(
+        "dfu-util 0.11\nOpening DFU capable USB device...\nCopying data from PC to DFU device\n"
+    )
     for pct in (0, 25, 50, 75, 100):
         if alt == os.environ.get("FAKE_DFU_FAIL") and pct == 50:
             out.write("\ndfu-util: Error during download get_status\n")
