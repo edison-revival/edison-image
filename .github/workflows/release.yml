@@ -1,0 +1,69 @@
+name: release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  release:
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # create the release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: edison-image-${{ github.sha }}
+          path: dist
+
+      - name: Write release notes
+        run: |
+          . dist/edison-image-release
+          if [ "$VERSION" != "$GITHUB_REF_NAME" ]; then
+            echo "image says $VERSION but the tag is $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+          cat > notes.md <<EOF
+          Debian 13 (trixie) for the Intel Edison (Kit for Arduino).
+
+          | | |
+          |---|---|
+          | Kernel | $KERNEL |
+          | U-Boot | $(cat dist/UBOOT_VERSION) |
+          | Commit | \`$COMMIT\` |
+
+          **Flash:** download all files into one folder, install \`dfu-util\` and
+          [uv](https://docs.astral.sh/uv/), then run \`uv run flash.py\` there and reboot the
+          board into DFU mode when asked. Guides:
+          [Linux](https://github.com/edison-revival/edison-image/blob/$GITHUB_REF_NAME/docs/flashing-linux.md) ·
+          [macOS](https://github.com/edison-revival/edison-image/blob/$GITHUB_REF_NAME/docs/flashing-macos.md) ·
+          [Windows](https://github.com/edison-revival/edison-image/blob/$GITHUB_REF_NAME/docs/flashing-windows.md).
+
+          The first flash of this image is a clean slate: it replaces U-Boot and rewrites the
+          partition table. Later flashes keep your settings.
+
+          \`packages.manifest\` lists every Debian package and version in the image;
+          \`kernel.config\` is the kernel configuration (corresponding source: see the README).
+          EOF
+          cat notes.md
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prerelease=""
+          case "$GITHUB_REF_NAME" in *-*) prerelease="--prerelease" ;; esac
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --verify-tag \
+            --title "edison-image $GITHUB_REF_NAME" \
+            --notes-file notes.md \
+            --generate-notes \
+            $prerelease

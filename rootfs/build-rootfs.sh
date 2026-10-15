@@ -16,6 +16,15 @@ release=$(cat /in/kernel/RELEASE)
 mkdir -p /work /out
 rm -rf "$ROOT"
 
+# What this image is, for /etc/edison-image-release and the login banner.
+cat > /work/edison-image-release <<EOF
+VERSION=${IMAGE_VERSION:-unknown}
+COMMIT=${IMAGE_COMMIT:-unknown}
+KERNEL=$release
+BUILT=$(date -u +%Y-%m-%dT%H:%MZ)
+URL=https://github.com/edison-revival/edison-image
+EOF
+
 packages=$(grep -v -e '^#' -e '^$' /src/rootfs/packages.txt | paste -sd, -)
 
 # Fetch and verify the Edison firmware files before spending time on the rootfs.
@@ -58,6 +67,8 @@ mmdebstrap \
     --customize-hook='install -d "$1/usr/lib/edison/acpi" && install -m 0644 -t "$1/usr/lib/edison/acpi/" /work/acpi/*.aml' \
     --customize-hook='chmod 0755 "$1"/usr/local/sbin/edison-*' \
     --customize-hook='mkdir -p "$1/factory" "$1/var/lib/edison"' \
+    --customize-hook='install -m 0644 /work/edison-image-release "$1/etc/edison-image-release"' \
+    --customize-hook='. /work/edison-image-release; printf "\nedison-revival edison-image %s (kernel %s)\n%s\n\n" "$VERSION" "$KERNEL" "$URL" > "$1/etc/motd"' \
     --customize-hook='ln -sf /var/lib/edison/wifi/wpa_supplicant-wlan0.conf "$1/etc/wpa_supplicant/wpa_supplicant-wlan0.conf"' \
     --customize-hook='for f in /usr/bin/login /usr/sbin/agetty /usr/sbin/sshd /usr/sbin/wpa_supplicant /usr/sbin/rfkill /usr/bin/gpioset /usr/sbin/i2cdetect /usr/sbin/mkfs.ext4 /usr/sbin/e2fsck /usr/bin/script /usr/bin/fw_setenv; do test -x "$1$f" || { echo "missing $f in rootfs" >&2; exit 1; }; done' \
     --customize-hook='chroot "$1" systemctl enable systemd-networkd systemd-resolved systemd-timesyncd edison-acpi-tables edison-gadget edison-bt-addr edison-config-restore edison-config-save.path rfkill-unblock wpa_supplicant@wlan0 serial-getty@ttyGS0' \
@@ -95,7 +106,9 @@ grep -v -e '^#' -e '^$' /src/uboot/env.txt > /work/env.txt
 mkenvimage -r -s 0x10000 -o /out/u-boot-env.bin /work/env.txt
 
 cp /in/kernel/RELEASE /out/KERNEL_RELEASE
+cp /work/edison-image-release /out/edison-image-release
 cd /out
 sha256sum rootfs.ext4 boot.vfat u-boot-env.bin > SHA256SUMS
-chmod 0644 rootfs.ext4 boot.vfat u-boot-env.bin KERNEL_RELEASE SHA256SUMS packages.manifest
+chmod 0644 rootfs.ext4 boot.vfat u-boot-env.bin KERNEL_RELEASE SHA256SUMS packages.manifest \
+    edison-image-release
 echo "rootfs: ${used_kib} KiB used, image $(( size_kib / 1024 )) MiB; kernel ${release}"

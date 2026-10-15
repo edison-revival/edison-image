@@ -38,7 +38,11 @@ fi
 if [ "$what" = rootfs ] || [ "$what" = all ]; then
     docker build -t edison-image/rootfs-tools -f docker/rootfs.Dockerfile docker
     mkdir -p "$out/image" "$out/cache"
+    # v0.1.0 on a tag, v0.1.0-3-gabc1234 after it, a bare commit hash before the first tag.
+    version="$(git describe --tags --always --dirty 2>/dev/null || echo unknown)"
     docker run --rm --privileged \
+        -e IMAGE_VERSION="$version" \
+        -e IMAGE_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo unknown)" \
         -v "$root:/src:ro" \
         -v "$out/kernel:/in/kernel:ro" \
         -v "$out/image:/out" \

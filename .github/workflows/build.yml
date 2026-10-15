@@ -3,12 +3,12 @@ name: build
 on:
   push:
     branches: [main]
-    tags: ["v*"]
   pull_request:
   workflow_dispatch:
+  workflow_call: # release.yml builds tags through this workflow
 
 permissions:
-  contents: write # create releases on tags
+  contents: read
 
 jobs:
   build:
@@ -16,6 +16,8 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # tags, for the version stamped into the image (git describe)
 
       - name: Restore Debian package cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
@@ -38,6 +40,7 @@ jobs:
           xz -T0 -6 -c out/image/rootfs.ext4 > dist/rootfs.ext4.xz
           cp out/kernel/config dist/kernel.config
           cp out/image/KERNEL_RELEASE dist/
+          cp out/image/edison-image-release dist/
           cp out/uboot/VERSION dist/UBOOT_VERSION
           cp out/image/packages.manifest dist/
           cp scripts/flash.py dist/
@@ -45,9 +48,10 @@ jobs:
           ls -l dist
           {
             echo "### Build"
-            echo "- kernel: $(cat dist/KERNEL_RELEASE)"
-            echo "- U-Boot: $(cat dist/UBOOT_VERSION)"
             echo '```'
+            cat dist/edison-image-release
+            echo "UBOOT=$(cat dist/UBOOT_VERSION)"
+            echo
             ls -lh dist
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
@@ -58,12 +62,3 @@ jobs:
           path: dist/
           retention-days: 7
           compression-level: 0 # rootfs is already xz-compressed
-
-      - name: Create release
-        if: startsWith(github.ref, 'refs/tags/v')
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release create "$GITHUB_REF_NAME" dist/* \
-            --title "edison-image $GITHUB_REF_NAME" \
-            --notes "Debian 13 for the Intel Edison. Kernel $(cat dist/KERNEL_RELEASE), U-Boot $(cat dist/UBOOT_VERSION). Extract and flash with: uv run flash.py"

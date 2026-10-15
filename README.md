@@ -1,12 +1,11 @@
 # edison-image
 
 Debian 13 (trixie) for the Intel Edison (Kit for Arduino), on a mainline LTS kernel,
-booted by mainline U-Boot. See
-[decision 0001](https://github.com/edison-revival/edison-docs/blob/main/decisions/0001-stage3-os-image.md)
-for why it's built this way.
+booted by mainline U-Boot.
 
 **Status:** boots and passes the hardware checks (serial, USB networking, SSH, WiFi,
-Bluetooth, I2C, GPIO) on a real board. No tagged release yet.
+Bluetooth, I2C, GPIO) on a real board. Flashing is tested from Linux; the macOS and Windows
+guides are not yet tested on hardware.
 
 ## What you get
 
@@ -19,63 +18,93 @@ Bluetooth, I2C, GPIO) on a real board. No tagged release yet.
 - A USB serial console (ACM) on the same cable, besides the FTDI console on J3.
 - The Arduino kit's I/O: expanders, level shifters and muxing described by ACPI overlays,
   with UART1 on IO0/IO1, I2C-6 on SDA/SCL and the DS2 LED on IO13 (heartbeat).
-- Login `edison` / `edison`. You must change the password at first login. Root login over
-  SSH is disabled; use `sudo`.
+- **Settings that survive reflashing** (see below), and almost the whole eMMC (~3.5 GiB)
+  for the root filesystem.
 
 ## Get an image
 
-- **Releases** (when tagged): download from the
+- **Releases:** download from the
   [releases page](https://github.com/edison-revival/edison-image/releases).
 - **Latest build:** each push to `main` builds the image in CI. Open the newest successful
   [build run](https://github.com/edison-revival/edison-image/actions/workflows/build.yml)
   and download its `edison-image-*` artifact (kept for 7 days).
 - **From source:** see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Either download contains `u-boot.bin`, `u-boot-env.bin`, `boot.vfat`, `rootfs.ext4.xz`,
+A download contains `u-boot.bin`, `u-boot-env.bin`, `boot.vfat`, `rootfs.ext4.xz`,
 `SHA256SUMS`, `packages.manifest` and `flash.py`.
 
 ## Flash
 
-Needs:
-- `dfu-util` (Linux: `sudo apt install dfu-util`; macOS: `brew install dfu-util`;
-  Windows: the dfu-util release binaries plus the WinUSB driver for `8087:0a99`)
-- on Linux, the udev rule from
-  [edison-recovery](https://github.com/edison-revival/edison-recovery)`/udev/`
-- [uv](https://docs.astral.sh/uv/), which also fetches a suitable Python if you don't have
-  one: `winget install astral-sh.uv` on Windows,
-  `curl -LsSf https://astral.sh/uv/install.sh | sh` on Linux/macOS. The script uses only
-  the standard library, so `python3 flash.py` works too.
+Step-by-step guides: **[Linux](docs/flashing-linux.md)** ·
+**[macOS](docs/flashing-macos.md)** · **[Windows](docs/flashing-windows.md)**.
 
-The board must already run U-Boot with working DFU (a board recovered with
-`edison-recovery`, or vendor U-Boot).
-
-In an extracted download (or `uv run scripts/flash.py` in a source checkout after
-building):
+In short: install `dfu-util` and [uv](https://docs.astral.sh/uv/), then in the extracted
+download run
 
 ```
 uv run flash.py
 ```
 
-It verifies the images, waits for the board, then writes U-Boot, its environment (both
-copies), the kernel and the rootfs, showing progress, speed and time remaining. The IFWI
-isn't touched. `--only rootfs` (or any list of partitions) reflashes just those. Ctrl+C is
-safe: it never interrupts the U-Boot writes, and tells you how to recover otherwise.
+and reboot the board into DFU mode when asked (`sudo edison-dfu` on a board already running
+this image). The board must already run U-Boot with working DFU: a board recovered with
+[edison-recovery](https://github.com/edison-revival/edison-recovery), or with the vendor
+U-Boot.
 
-To get the board into DFU mode, **reboot it** while the script waits (`sudo reboot` if it
-runs Linux, or power-cycle it): U-Boot opens a 3-second DFU window on every boot. Don't use
-the reset button while Linux is running (see Notes).
+> **The first flash is a clean slate.** It replaces U-Boot and rewrites the partition
+> table: everything on the old rootfs, `update` and `home` partitions is lost. Later
+> flashes keep your settings (below). The IFWI and the factory partition are never touched.
 
-Reflashing the rootfs replaces everything in it, including WiFi settings and the `edison`
-password.
+## First steps on the board
+
+- **Log in** over SSH (`ssh edison@edison.local`) or a serial console: `edison` /
+  `edison`. You must change the password at first login. Root login over SSH is disabled;
+  use `sudo`.
+- **WiFi:**
+
+  ```
+  sudo sh -c 'wpa_passphrase "MyNetwork" >> /etc/wpa_supplicant/wpa_supplicant-wlan0.conf'
+  ```
+
+  ```
+  sudo wpa_cli -i wlan0 reconfigure
+  ```
+
+- **Time zone and locale:** `sudo timedatectl set-timezone Area/City`;
+  `sudo dpkg-reconfigure locales`. The image defaults to UTC and `C.UTF-8`.
+- **Reflash later** with `sudo edison-dfu` on the board, then `uv run flash.py --only
+  rootfs` on the computer (or the full flash for a new U-Boot or environment).
+
+## What survives a reflash
+
+The eMMC has one large root filesystem (with `/home`) plus a small `config` partition,
+mounted at `/var/lib/edison`, which flashing never writes. It keeps:
+
+- WiFi networks, SSH host keys (no "host key changed" warnings), users, passwords, groups
+  and SSH `authorized_keys`, the hostname, time zone and locale, Bluetooth pairings, and any
+  extra systemd-networkd config you put in `/var/lib/edison/network/`;
+- any other files you list in `/var/lib/edison/files.list` (one absolute path per line).
+
+Settings are saved when they change and at every clean shutdown; `sudo edison-config save`
+saves now. Everything else in the root filesystem, **including `/home`**, is replaced by a
+reflash. Keep data that must survive on a microSD card (the Kit for Arduino has a slot), and
+update installed software with `apt` rather than by reflashing.
+
+| Partition | Size | Contents |
+|---|---|---|
+| 1–6 | 32 MiB | U-Boot (×2), its environment (×2), factory data, panic |
+| `boot` | 64 MiB | the kernel |
+| `config` | 64 MiB | settings that survive reflashing |
+| `rootfs` | the rest (~3.5 GiB) | Debian, including `/home` |
 
 ## Notes
 
-- **Arduino kit expander wedged:** an abrupt reset while Linux is running (the reset
-  button, and presumably a watchdog reset) can leave the kit's I/O expander at I2C-1 0x20
-  unresponsive: the expanders stay powered while the SoC restarts. A clean reboot or a power
-  cycle is fine. The chip has no reset pin and doesn't support the I2C general-call reset, so
-  only removing power clears it. `edison-acpi-tables.service` then fails with
-  "TRI_STATE_ALL not found"; unplug all power and reconnect.
+- **Use `sudo edison-dfu` or `sudo reboot`, not the reset button:** an abrupt reset while
+  Linux is running (the reset button, and presumably a watchdog reset) can leave the kit's
+  I/O expander at I2C-1 0x20 unresponsive, because the expanders stay powered while the SoC
+  restarts. A clean reboot or a power cycle is fine. The chip has no reset pin and doesn't
+  support the I2C general-call reset, so only removing power clears it.
+  `edison-acpi-tables.service` then fails with "TRI_STATE_ALL not found"; unplug all power
+  and reconnect.
 - **Clock:** there's no battery-backed time source, so the board boots with a stale clock
   until `systemd-timesyncd` syncs over the network. `apt update` fails ("Not live until")
   until then.

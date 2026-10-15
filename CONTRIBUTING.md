@@ -32,17 +32,27 @@ Then `uv run scripts/flash.py` flashes `out/`.
 | `rootfs/build-rootfs.sh` | `mmdebstrap`, overlay, firmware, ACPI tables, images |
 | `rootfs/packages.txt` | Debian packages |
 | `rootfs/firmware.lock` | Edison WiFi NVRAM and Bluetooth firmware: URLs + SHA256 |
-| `rootfs/overlay/` | Files copied into the rootfs (units, scripts, network config) |
+| `rootfs/overlay/` | Files copied into the rootfs (units, scripts, network config); `usr/local/sbin/edison-config` handles the settings that survive reflashing, `edison-dfu` the one-shot DFU request |
 | `acpi/` | Arduino kit ACPI overlays (meta-acpi) and which ones to load |
-| `uboot/env.txt` | U-Boot environment (boot from the `boot` partition, `console=ttyS2`) |
+| `uboot/env.txt` | U-Boot environment: partition layout, boot flow, DFU (window and one-shot request) |
+| `docs/` | Per-OS flashing guides |
 | `scripts/flash.py` | DFU flasher, standard library only |
 | `tests/` | `flash.py` unit tests and a fake `dfu-util` |
 
 ## CI and tests
 
 - `.github/workflows/build.yml` builds everything on a GitHub-hosted runner on each push
-  and uploads the images (rootfs xz-compressed) as an artifact. Pushing a `v*` tag also
-  creates a release.
+  and uploads the images (rootfs xz-compressed) as an artifact.
+- `.github/workflows/release.yml` runs on `v*` tags: it builds through `build.yml`, checks
+  the version stamped into the image matches the tag, and creates the GitHub release with
+  notes and every file attached (tags with a `-`, like `v0.2.0-rc1`, become pre-releases).
+
+## Releasing
+
+1. Make sure `main` is green and the image has passed the hardware checks on a real board.
+2. Tag and push: `git tag -a v0.1.0 -m "edison-image v0.1.0"` then `git push origin v0.1.0`.
+3. The release workflow does the rest. The image reports its version in
+   `/etc/edison-image-release` and the login banner.
 - `.github/workflows/test.yml` runs the `flash.py` unit tests on Linux, macOS and Windows
   (Python 3.9 and 3.13), Ruff (format and lint) and `shellcheck`.
 
