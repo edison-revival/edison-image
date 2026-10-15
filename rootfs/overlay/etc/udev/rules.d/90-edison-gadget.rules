@@ -1,0 +1,3 @@
+# Bind the USB gadget whenever a device controller appears (dwc3 registers its UDC late
+# in boot, and again after a host/device role change).
+ACTION=="add", SUBSYSTEM=="udc", TAG+="systemd", ENV{SYSTEMD_WANTS}+="edison-gadget.service"

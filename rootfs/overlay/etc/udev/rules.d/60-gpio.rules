@@ -1,0 +1,2 @@
+# Let members of the gpio group use the GPIO character devices (libgpiod) without root.
+SUBSYSTEM=="gpio", KERNEL=="gpiochip*", GROUP="gpio", MODE="0660"

@@ -1,4 +1,6 @@
 # Debian 13 (trixie) packages on top of mmdebstrap's "apt" variant (essential + apt).
+# login is no longer Essential in trixie; without it agetty can't log anyone in.
+login
 systemd
 systemd-sysv
 systemd-resolved

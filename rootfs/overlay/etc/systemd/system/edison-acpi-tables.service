@@ -1,0 +1,14 @@
+[Unit]
+Description=Load Edison ACPI table overlays (Arduino kit)
+DefaultDependencies=no
+After=sys-kernel-config.mount
+Requires=sys-kernel-config.mount
+Before=systemd-udev-trigger.service sysinit.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/edison-acpi-tables
+
+[Install]
+WantedBy=sysinit.target

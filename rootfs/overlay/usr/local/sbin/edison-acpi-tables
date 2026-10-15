@@ -1,0 +1,33 @@
+#!/bin/sh
+# Load the ACPI table overlays (Arduino kit description) through configfs, then pulse
+# TRI_STATE_ALL so the header's level shifters come up in the configured state. Based on
+# meta-acpi's acpi-tables-load (MIT).
+set -eu
+
+TABLES=/usr/lib/edison/acpi
+CONFIGFS=/sys/kernel/config/acpi/table
+
+for aml in "$TABLES"/*.aml; do
+    [ -e "$aml" ] || continue
+    name=$(basename "$aml" .aml)
+    [ -d "$CONFIGFS/$name" ] && continue
+    mkdir "$CONFIGFS/$name"
+    cat "$aml" > "$CONFIGFS/$name/aml"
+    echo "loaded $name"
+done
+
+# The expanders probe asynchronously; wait for the line to exist.
+for _ in $(seq 50); do
+    gpioinfo TRI_STATE_ALL >/dev/null 2>&1 && break
+    sleep 0.1
+done
+if ! gpioinfo TRI_STATE_ALL >/dev/null 2>&1; then
+    echo "TRI_STATE_ALL not found: the Arduino kit's GPIO expander at I2C-1 0x20 isn't" >&2
+    echo "responding (see dmesg | grep pca953x). It can wedge across a reset; power-cycle" >&2
+    echo "the board fully (unplug all power) to clear it." >&2
+    exit 1
+fi
+# libgpiod v2 only guarantees a value while gpioset holds the line: pulse it low briefly,
+# then keep holding it high (the process stays in this unit's cgroup).
+timeout 0.2 gpioset TRI_STATE_ALL=0 || true
+gpioset -z TRI_STATE_ALL=1

@@ -5,9 +5,10 @@ Requires=sys-kernel-config.mount
 Before=network-pre.target
 Wants=network-pre.target
 
+# No RemainAfterExit: udev (90-edison-gadget.rules) starts this again whenever a USB
+# device controller appears, so the gadget gets (re)bound.
 [Service]
 Type=oneshot
-RemainAfterExit=yes
 ExecStart=/usr/local/sbin/edison-gadget
 
 [Install]

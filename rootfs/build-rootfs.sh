@@ -26,6 +26,16 @@ while read -r sha name url; do
     echo "$sha  /work/firmware/$name" | sha256sum -c --quiet -
 done < /src/rootfs/firmware.lock
 
+# Compile the ACPI table overlays listed in acpi/tables.txt.
+mkdir -p /work/acpi
+defines=$(sed -n 's/^defines: *//p' /src/acpi/tables.txt)
+for asl in $(grep -E '^[^#].*\.asl$' /src/acpi/tables.txt); do
+    # shellcheck disable=SC2086
+    iasl -vs $defines -I /src/acpi/meta-acpi -p "/work/acpi/${asl%.asl}" "/src/acpi/meta-acpi/$asl" >/dev/null \
+        || { echo "iasl failed for $asl" >&2; exit 1; }
+done
+ls /work/acpi/*.aml >/dev/null
+
 mkdir -p /cache/apt
 mmdebstrap \
     --variant=apt \
@@ -35,15 +45,20 @@ mmdebstrap \
     --setup-hook='mkdir -p "$1/var/cache/apt/archives"' \
     --setup-hook='sync-in /cache/apt /var/cache/apt/archives/' \
     --customize-hook='sync-out /var/cache/apt/archives /cache/apt' \
-    --customize-hook='cp -a /src/rootfs/overlay/. "$1/"' \
+    --customize-hook='cp -r --no-preserve=mode,ownership /src/rootfs/overlay/. "$1/"' \
     --customize-hook="tar -C \"\$1\" --keep-directory-symlink -xzf /in/kernel/modules.tar.gz" \
     --customize-hook="chroot \"\$1\" depmod -a $release" \
     --customize-hook='install -m 0644 -t "$1/usr/lib/firmware/brcm/" /work/firmware/*' \
     --customize-hook='ln -sf brcmfmac43340-sdio.txt "$1/usr/lib/firmware/brcm/brcmfmac43340-sdio.Intel Corporation-Merrifield.txt"' \
+    --customize-hook='ln -sf brcmfmac43340-sdio.bin "$1/usr/lib/firmware/brcm/brcmfmac43340-sdio.Intel Corporation-Merrifield.bin"' \
     --customize-hook='test -e "$1/usr/lib/firmware/brcm/brcmfmac43340-sdio.bin" || { echo "firmware-brcm80211 lacks brcmfmac43340-sdio.bin" >&2; exit 1; }' \
-    --customize-hook='chmod 0755 "$1/usr/local/sbin/edison-gadget"' \
-    --customize-hook='chroot "$1" systemctl enable systemd-networkd systemd-resolved systemd-timesyncd edison-gadget rfkill-unblock wpa_supplicant@wlan0 serial-getty@ttyGS0' \
-    --customize-hook="chroot \"\$1\" useradd -m -s /bin/bash -G sudo,netdev,plugdev,dialout $USER_NAME" \
+    --customize-hook='install -d "$1/usr/lib/edison/acpi" && install -m 0644 -t "$1/usr/lib/edison/acpi/" /work/acpi/*.aml' \
+    --customize-hook='chmod 0755 "$1/usr/local/sbin/edison-gadget" "$1/usr/local/sbin/edison-acpi-tables"' \
+    --customize-hook='for f in /usr/bin/login /usr/sbin/agetty /usr/sbin/sshd /usr/sbin/wpa_supplicant /usr/sbin/rfkill /usr/bin/gpioset /usr/sbin/i2cdetect; do test -x "$1$f" || { echo "missing $f in rootfs" >&2; exit 1; }; done' \
+    --customize-hook='chroot "$1" systemctl enable systemd-networkd systemd-resolved systemd-timesyncd edison-acpi-tables edison-gadget rfkill-unblock wpa_supplicant@wlan0 serial-getty@ttyGS0' \
+    --customize-hook='chroot "$1" groupadd -r -f gpio' \
+    --customize-hook="chroot \"\$1\" useradd -m -s /bin/bash -G sudo,netdev,plugdev,dialout,gpio,i2c $USER_NAME" \
+    --customize-hook='find "$1/etc/systemd" "$1/etc/udev/rules.d" -type f -perm /022 -print -exec false {} + >&2 || { echo "group/world-writable config files in rootfs" >&2; exit 1; }' \
     --customize-hook="echo '$USER_NAME:$USER_NAME' | chroot \"\$1\" chpasswd" \
     --customize-hook="chroot \"\$1\" passwd --expire $USER_NAME" \
     --customize-hook='ln -sf /run/systemd/resolve/stub-resolv.conf "$1/etc/resolv.conf"' \

@@ -1,10 +1,32 @@
 #!/bin/sh
-# Set up the USB device-mode gadget: NCM ethernet (usb0) + ACM serial (ttyGS0).
-# NCM is supported natively by Linux, macOS and Windows 10/11.
+# Set up the USB device-mode gadget: NCM ethernet (usb0) + ACM serial (ttyGS0), and bind
+# it to the USB device controller. NCM is supported natively by Linux, macOS and
+# Windows 10/11.
+#
+# Safe to run repeatedly. It runs at boot and again from udev whenever a device controller
+# (UDC) appears, because the dwc3 UDC can register after this first runs; writing an
+# empty name to UDC "succeeds" without binding anything.
 set -eu
 
 G=/sys/kernel/config/usb_gadget/edison
-[ -d "$G" ] && exit 0
+
+bind() {
+    udc=$(ls /sys/class/udc 2>/dev/null | head -n1)
+    if [ -z "$udc" ]; then
+        echo "no USB device controller yet; udev will run this again when one appears"
+        exit 0
+    fi
+    if [ -n "$(cat "$G/UDC")" ]; then
+        exit 0
+    fi
+    echo "$udc" > "$G/UDC"
+    echo "bound to $udc"
+}
+
+if [ -d "$G/configs/c.1/ncm.usb0" ]; then
+    bind
+    exit 0
+fi
 
 modprobe libcomposite
 mkdir -p "$G"
@@ -41,4 +63,4 @@ echo "$host_addr" > functions/ncm.usb0/host_addr
 ln -s functions/ncm.usb0 configs/c.1/
 ln -s functions/acm.usb0 configs/c.1/
 
-ls /sys/class/udc | head -n1 > UDC
+bind

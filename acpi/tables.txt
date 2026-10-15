@@ -1,0 +1,11 @@
+# iasl defines: how the Arduino header's shared pins are muxed.
+#   MUX_UART_2WIRE  UART1 on IO0/IO1
+#   MUX_I2C         I2C-6 on SDA/SCL
+#   MUX_SPI         SPI5 on IO10-IO13. Conflicts with the DS2 LED, which needs IO13 as
+#                   a GPIO; to use SPI, add -DMUX_SPI and load arduino.asl instead of
+#                   arduino-leds-ds2.asl below.
+defines: -DMUX_UART_2WIRE -DMUX_I2C
+
+# Overlays to compile and load at boot, from meta-acpi/. arduino-leds-ds2 includes the
+# whole Arduino kit description (arduino.asli) plus the DS2 LED on IO13.
+arduino-leds-ds2.asl

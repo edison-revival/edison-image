@@ -35,16 +35,26 @@ Outputs:
 
 ## Flash
 
-Needs `dfu-util` and, on Linux, the udev rule from `edison-recovery/udev/`. The board must
-already run mainline U-Boot (a board recovered with `edison-recovery`, or one with
-working vendor U-Boot DFU).
+Needs:
+- `dfu-util` (Linux: `sudo apt install dfu-util`; macOS: `brew install dfu-util`;
+  Windows: the dfu-util release binaries plus the WinUSB driver for `8087:0a99`)
+- on Linux, the udev rule from `edison-recovery/udev/`
+- [uv](https://docs.astral.sh/uv/), which also fetches a suitable Python if you don't have
+  one: `winget install astral-sh.uv` on Windows,
+  `curl -LsSf https://astral.sh/uv/install.sh | sh` on Linux/macOS. The script uses only
+  the standard library, so `python3 scripts/flash.py` works too.
+
+The board must already run U-Boot with working DFU (a board recovered with
+`edison-recovery`, or vendor U-Boot).
 
 ```
-scripts/flash.sh
+uv run scripts/flash.py
 ```
 
-Writes U-Boot, its environment (both copies), the kernel and the rootfs. The IFWI isn't
-touched.
+It verifies the images, waits for the board (reset it when asked), then writes U-Boot, its
+environment (both copies), the kernel and the rootfs, showing overall progress, speed and
+time remaining. The IFWI isn't touched. `--only rootfs` (or any list of partitions)
+reflashes just those.
 
 ## Layout
 
