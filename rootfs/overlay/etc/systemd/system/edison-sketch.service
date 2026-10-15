@@ -1,0 +1,16 @@
+# Runs the Arduino sketch uploaded by arduino-core-edison's uploader. The sketch opens
+# /dev/ttyGS0 (the USB serial port) itself as Serial.
+[Unit]
+Description=Arduino sketch
+After=edison-acpi-tables.service edison-gadget.service
+ConditionPathExists=/var/lib/edison-sketch/sketch.elf
+
+[Service]
+User=edison
+WorkingDirectory=/var/lib/edison-sketch
+ExecStart=/var/lib/edison-sketch/sketch.elf
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

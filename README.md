@@ -15,9 +15,15 @@ guides are not yet tested on hardware.
 - **USB networking with nothing to configure on the computer:** plug J16 in, and the Edison
   appears as a USB network adapter (NCM) and hands your computer an address by DHCP.
   The board is `192.168.2.15`, or `edison.local`.
-- A USB serial console (ACM) on the same cable, besides the FTDI console on J3.
+- A USB serial port (ACM) on the same cable, reserved for Arduino sketches as `Serial`
+  (see [arduino-core-edison](https://github.com/edison-revival/arduino-core-edison)). Log
+  in over SSH on the same cable, or on the FTDI serial console on J3.
+- Arduino sketches run as the `edison-sketch` service from `/var/lib/edison-sketch/`,
+  restarted automatically when a new one is uploaded; the board advertises itself to the
+  Arduino IDE over mDNS.
 - The Arduino kit's I/O: expanders, level shifters and muxing described by ACPI overlays,
-  with UART1 on IO0/IO1, I2C-6 on SDA/SCL and the DS2 LED on IO13 (heartbeat).
+  with UART1 on IO0/IO1 and I2C-6 on SDA/SCL. The other header pins, including IO13 and
+  its DS2 LED, are left for sketches to drive.
 - **Settings that survive reflashing** (see below), and almost the whole eMMC (~3.5 GiB)
   for the root filesystem.
 
@@ -108,8 +114,8 @@ update installed software with `apt` rather than by reflashing.
 - **Clock:** there's no battery-backed time source, so the board boots with a stale clock
   until `systemd-timesyncd` syncs over the network. `apt update` fails ("Not live until")
   until then.
-- **SPI on the header** is off by default: it shares IO13 with the DS2 LED. See
-  `acpi/README.md` to switch.
+- **SPI on the header** (IO10–IO13) is off by default, so those pins work as GPIO for
+  sketches. See `acpi/README.md` to switch.
 - **Security modules:** the kernel has no active LSM policy. SELinux is disabled (Debian
   ships no policy and doesn't use it by default). Stock Debian uses AppArmor; we don't
   enable it yet. Planned approach, one image rather than two variants: build AppArmor into

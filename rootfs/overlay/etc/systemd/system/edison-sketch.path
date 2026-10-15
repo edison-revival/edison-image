@@ -1,0 +1,11 @@
+# (Re)start the sketch whenever a new one is uploaded. The uploader writes a temporary file
+# and renames it to sketch.elf, so no privileges are needed to restart it.
+[Unit]
+Description=Watch for a newly uploaded Arduino sketch
+
+[Path]
+PathChanged=/var/lib/edison-sketch/sketch.elf
+Unit=edison-sketch-restart.service
+
+[Install]
+WantedBy=multi-user.target

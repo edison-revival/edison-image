@@ -1,11 +1,11 @@
 # iasl defines: how the Arduino header's shared pins are muxed.
-#   MUX_UART_2WIRE  UART1 on IO0/IO1
-#   MUX_I2C         I2C-6 on SDA/SCL
-#   MUX_SPI         SPI5 on IO10-IO13. Conflicts with the DS2 LED, which needs IO13 as
-#                   a GPIO; to use SPI, add -DMUX_SPI and load arduino.asl instead of
-#                   arduino-leds-ds2.asl below.
+#   MUX_UART_2WIRE  UART1 on IO0/IO1 (Serial1 in arduino-core-edison)
+#   MUX_I2C         I2C-6 on SDA/SCL (Wire)
+#   MUX_SPI         SPI5 on IO10-IO13; not enabled, so arduino-core-edison can drive those
+#                   pins as GPIO (IO13 is LED_BUILTIN).
 defines: -DMUX_UART_2WIRE -DMUX_I2C
 
-# Overlays to compile and load at boot, from meta-acpi/. arduino-leds-ds2 includes the
-# whole Arduino kit description (arduino.asli) plus the DS2 LED on IO13.
-arduino-leds-ds2.asl
+# Overlays to compile and load at boot, from meta-acpi/. arduino.asl describes the Arduino
+# kit (expanders, level shifters, muxes). It doesn't claim IO13: arduino-leds-ds2.asl would
+# give it to the DS2 LED as a heartbeat, but then sketches couldn't use pin 13.
+arduino.asl

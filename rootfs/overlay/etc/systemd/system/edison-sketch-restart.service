@@ -1,0 +1,6 @@
+[Unit]
+Description=Restart the Arduino sketch after an upload
+
+[Service]
+Type=oneshot
+ExecStart=/bin/systemctl restart edison-sketch.service

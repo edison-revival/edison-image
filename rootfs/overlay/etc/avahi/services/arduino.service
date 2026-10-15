@@ -1,0 +1,13 @@
+<?xml version="1.0" standalone='no'?>
+<!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+<!-- Lets the Arduino IDE 2.x (builtin:mdns-discovery) list this board as a network port. -->
+<service-group>
+  <name replace-wildcards="yes">%h</name>
+  <service>
+    <type>_arduino._tcp</type>
+    <port>22</port>
+    <txt-record>board=edison</txt-record>
+    <txt-record>ssh_upload=yes</txt-record>
+    <txt-record>auth_upload=yes</txt-record>
+  </service>
+</service-group>
