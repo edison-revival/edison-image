@@ -144,9 +144,13 @@ restore_locale() {
     if [ -f "$d/locale" ]; then
         cp "$d/locale" /etc/default/locale
     fi
-    if [ -f "$d/locale-archive" ]; then
+    archive=/usr/lib/locale/locale-archive
+    if [ -f "$d/locale-archive" ] && ! cmp -s "$d/locale-archive" "$archive"; then
+        # Running processes have the archive mapped: rewriting it in place makes them die
+        # of SIGBUS (seen in udev workers at boot). Replace it with a new file instead.
         mkdir -p /usr/lib/locale
-        cp "$d/locale-archive" /usr/lib/locale/locale-archive
+        cp "$d/locale-archive" "$archive.new"
+        mv "$archive.new" "$archive"
     fi
     return 0
 }
@@ -169,7 +173,8 @@ save_files() {
 
 restore_files() {
     [ -d "$STATE/files" ] || return 0
-    cp -a "$STATE/files/." /
+    # New files rather than rewriting in place, in case one is mapped by a running process.
+    cp -a --remove-destination "$STATE/files/." /
 }
 
 # Set by restore when it finishes. Saving before the restore has run would record the
