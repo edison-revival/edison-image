@@ -46,13 +46,6 @@ Then `uv run scripts/flash.py` flashes `out/`.
 - `.github/workflows/release.yml` runs on `v*` tags: it builds through `build.yml`, checks
   the version stamped into the image matches the tag, and creates the GitHub release with
   notes and every file attached (tags with a `-`, like `v0.2.0-rc1`, become pre-releases).
-
-## Releasing
-
-1. Make sure `main` is green and the image has passed the hardware checks on a real board.
-2. Tag and push: `git tag -a v0.1.0 -m "edison-image v0.1.0"` then `git push origin v0.1.0`.
-3. The release workflow does the rest. The image reports its version in
-   `/etc/edison-image-release` and the login banner.
 - `.github/workflows/test.yml` runs the `flash.py` unit tests on Linux, macOS and Windows
   (Python 3.9 and 3.13), Ruff (format and lint) and `shellcheck`.
 
@@ -70,6 +63,14 @@ uvx ruff format . && uvx ruff check .
 ```
 shellcheck scripts/*.sh rootfs/build-rootfs.sh kernel/check-config.sh rootfs/overlay/usr/local/sbin/*
 ```
+
+## Releasing
+
+1. Make sure `main` is green and the image has passed the hardware checks on a real board:
+   flash the CI artifact of the commit you'll tag and check it.
+2. Tag and push: `git tag -a v0.2.0 -m "edison-image v0.2.0"` then `git push origin v0.2.0`.
+3. The release workflow does the rest. The image reports its version in
+   `/etc/edison-image-release` and the login banner.
 
 ## Conventions
 
