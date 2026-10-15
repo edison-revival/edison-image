@@ -11,8 +11,9 @@ WorkingDirectory=/var/lib/edison-sketch
 ExecStart=/var/lib/edison-sketch/sketch.elf
 Restart=on-failure
 RestartSec=2
-# The sketch leaves loop() and exits on SIGTERM; one that never returns from loop() is
-# killed after this, rather than holding up a new upload for systemd's default 90 s.
+# Sketches built with arduino-core-edison stop within milliseconds of SIGTERM, wherever
+# they are, returning their pins to inputs. Kill anything still running after this rather
+# than holding up a new upload for systemd's default 90 s.
 TimeoutStopSec=3
 
 [Install]
