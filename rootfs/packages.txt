@@ -10,6 +10,10 @@ dbus
 kmod
 iproute2
 iputils-ping
+# Recommended by iputils-ping, so mmdebstrap skips it: enables unprivileged ICMP sockets
+# (ping_group_range; trixie's ping has no capability) plus Debian's standard sysctl
+# hardening (protected_symlinks etc.).
+linux-sysctl-defaults
 netbase
 ca-certificates
 openssh-server
