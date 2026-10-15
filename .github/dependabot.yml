@@ -1,9 +1,13 @@
 version: 2
 updates:
-  # Proposes new major versions of workflow actions (and new immutable releases).
+  # Workflow actions are pinned to commit SHAs (immutable releases to their exact tag).
+  # Dependabot keeps them current: one grouped pull request a month.
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]
     commit-message:
       prefix: ci

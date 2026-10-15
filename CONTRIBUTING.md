@@ -73,9 +73,10 @@ shellcheck scripts/*.sh rootfs/build-rootfs.sh kernel/check-config.sh rootfs/ove
   version and checksum or commit. Nothing that can't be redistributed goes in the repo;
   fetch it and verify it instead.
 - **Builds must work from a clone with only Docker,** using the same scripts as CI.
-- **Workflow actions:** use the latest major tag (`actions/checkout@v7`), except actions
-  published as immutable releases, which use the exact version (`astral-sh/setup-uv@v10.3.0`).
-  Dependabot proposes updates.
+- **Workflow actions:** pin to the commit SHA of the latest release, with the version in a
+  comment (`actions/checkout@<sha> # v7.0.1`). Actions published as immutable releases use
+  their exact tag instead (`astral-sh/setup-uv@v10.3.0`). Dependabot opens one grouped pull
+  request a month with updates.
 - **Hardware changes need a hardware test.** Note what you tested on a real board in the
   pull request; findings go in
   [edison-docs](https://github.com/edison-revival/edison-docs).
