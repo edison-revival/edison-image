@@ -51,10 +51,17 @@ The board must already run U-Boot with working DFU (a board recovered with
 uv run scripts/flash.py
 ```
 
-It verifies the images, waits for the board (reset it when asked), then writes U-Boot, its
+It verifies the images, waits for the board, then writes U-Boot, its
 environment (both copies), the kernel and the rootfs, showing overall progress, speed and
 time remaining. The IFWI isn't touched. `--only rootfs` (or any list of partitions)
 reflashes just those.
+
+To get the board into DFU mode, **reboot it** while the script waits (`sudo reboot` if it
+runs Linux, or power-cycle it): U-Boot opens a 3-second DFU window on every boot. Don't use
+the reset button while Linux is running (see Notes).
+
+Reflashing the rootfs replaces everything in it, including WiFi settings and the `edison`
+password.
 
 ## Layout
 
@@ -68,6 +75,26 @@ reflashes just those.
 | `rootfs/firmware.lock` | Edison WiFi NVRAM and Bluetooth firmware: URLs + SHA256 |
 | `rootfs/overlay/` | Config files copied into the rootfs |
 | `uboot/env.txt` | U-Boot environment (boot from the `boot` partition, `console=ttyS2`) |
+
+## Notes
+
+- **Security modules:** the kernel has no active LSM policy. SELinux is disabled (Debian
+  ships no policy and doesn't use it by default). Stock Debian uses AppArmor; we don't
+  enable it yet. Planned approach, one image rather than two variants: build AppArmor into
+  the kernel (`CONFIG_SECURITY_APPARMOR=y`) but leave it out of the default LSM list, so it
+  costs nothing unless wanted. To opt in, `apt install apparmor` and add
+  `lsm=landlock,lockdown,yama,apparmor` (or the current list plus `apparmor`) to `bootargs`
+  in the U-Boot environment, then reboot; packages such as `avahi-daemon` then apply their
+  own profiles. If AppArmor later becomes the default, it's one config change.
+- **Clock:** there's no battery-backed time source, so the board boots with a stale clock
+  until `systemd-timesyncd` syncs over the network. `apt update` fails ("Not live until")
+  until then.
+- **Arduino kit expander wedged:** an abrupt reset while Linux is running (the reset
+  button, and presumably a watchdog reset) can leave the kit's I/O expander at I2C-1 0x20
+  unresponsive: the expanders stay powered while the SoC restarts. A clean reboot or a power
+  cycle is fine. The chip has no reset pin and doesn't support the I2C general-call reset, so
+  only removing power clears it. `edison-acpi-tables.service` then fails with
+  "TRI_STATE_ALL not found"; unplug all power and reconnect.
 
 ## Credits
 

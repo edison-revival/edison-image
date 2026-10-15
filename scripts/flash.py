@@ -67,7 +67,10 @@ def dfu_present() -> bool:
 
 def wait_for_device(timeout: int) -> None:
     print(f"Waiting up to {timeout} s for the Edison in DFU mode ({DEVICE}).")
-    print("Plug in J16 (SW1 towards the micro-USB ports) and reset the board.")
+    print("Plug in J16 (SW1 towards the micro-USB ports), then reboot the board: "
+          "'sudo reboot' if it's running Linux, otherwise power-cycle it.")
+    print("Avoid the reset button while Linux is running: it can wedge the Arduino "
+          "kit's I/O expander until the next power cycle.")
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if dfu_present():
