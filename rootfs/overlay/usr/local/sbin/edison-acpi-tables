@@ -27,6 +27,10 @@ if ! gpioinfo TRI_STATE_ALL >/dev/null 2>&1; then
     echo "the board fully (unplug all power) to clear it." >&2
     exit 1
 fi
+# IO13's level shifter powers up as an output, passing on the SoC line (GPIO 40), an
+# undriven input that reads high, so the DS2 LED would be lit. Drive it low and let go:
+# the SoC keeps the level, and sketches can still claim the line.
+gpioset -t0 -c gpiochip0 40=0 || true
 # libgpiod v2 only guarantees a value while gpioset holds the line: pulse it low briefly,
 # then keep holding it high (the process stays in this unit's cgroup).
 timeout 0.2 gpioset TRI_STATE_ALL=0 || true
