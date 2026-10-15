@@ -1,0 +1,2 @@
+# The image is smaller than the rootfs partition; x-systemd.growfs expands it on first boot.
+PARTLABEL=rootfs  /  ext4  defaults,noatime,x-systemd.growfs  0  1

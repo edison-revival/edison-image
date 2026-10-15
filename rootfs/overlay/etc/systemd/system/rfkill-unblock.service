@@ -1,0 +1,14 @@
+# WiFi and Bluetooth come up soft-blocked on the Edison.
+[Unit]
+Description=Unblock WiFi and Bluetooth
+After=systemd-rfkill.service
+Before=network-pre.target wpa_supplicant@wlan0.service bluetooth.service
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/rfkill unblock all
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+[Unit]
+Description=USB gadget (NCM ethernet + ACM serial)
+After=sys-kernel-config.mount systemd-modules-load.service
+Requires=sys-kernel-config.mount
+Before=network-pre.target
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/edison-gadget
+
+[Install]
+WantedBy=multi-user.target

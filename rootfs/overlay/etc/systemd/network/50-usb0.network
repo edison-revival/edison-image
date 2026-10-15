@@ -1,0 +1,16 @@
+# USB gadget network (NCM). The Edison is 192.168.2.15 and hands the host an address by
+# DHCP, so nothing needs configuring on the computer. No default route or DNS is offered,
+# so the host keeps using its own network.
+[Match]
+Name=usb0
+
+[Network]
+Address=192.168.2.15/24
+DHCPServer=yes
+ConfigureWithoutCarrier=yes
+
+[DHCPServer]
+PoolOffset=100
+PoolSize=20
+EmitDNS=no
+EmitRouter=no

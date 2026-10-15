@@ -1,0 +1,9 @@
+# Edison-specific Broadcom files not in Debian's firmware-brcm80211, from Intel's archived
+# intel/edison-firmware repo (commit 8585a10b3527666b2d35b3dcacffede3ec00cb53). Licence:
+# LICENCE.broadcom_bcm43xx, redistributable unmodified with the licence text. Installed
+# into /usr/lib/firmware/brcm/ under the name the kernel requests.
+#
+# sha256                                                            install-as                  url
+819ccb5cf8a689cdffa5aa9487cf0d7519202df22ddac7b7447da3e155f8cfa8  BCM43341B0.hcd              https://raw.githubusercontent.com/intel/edison-firmware/8585a10b3527666b2d35b3dcacffede3ec00cb53/broadcom_cws/bluetooth/firmware/BCM43341B0_002.001.014.0122.0166.hcd
+1b15813dfd806d301c90fefb31da8bcad25ca7c6b1d0231566e97730901353e8  brcmfmac43340-sdio.txt      https://raw.githubusercontent.com/intel/edison-firmware/8585a10b3527666b2d35b3dcacffede3ec00cb53/broadcom_cws/wlan/firmware/bcmdhd.cal_4334x_b0
+b16056fc91b82a0e3e8de8f86c2dac98201aa9dc3cbd33e8d38f1b087fcec30d  LICENCE.broadcom_bcm43xx    https://raw.githubusercontent.com/intel/edison-firmware/8585a10b3527666b2d35b3dcacffede3ec00cb53/broadcom_cws/wlan/firmware/LICENCE.broadcom_bcm43xx
