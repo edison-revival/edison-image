@@ -29,7 +29,8 @@ done < /src/rootfs/firmware.lock
 # Compile the ACPI table overlays listed in acpi/tables.txt.
 mkdir -p /work/acpi
 defines=$(sed -n 's/^defines: *//p' /src/acpi/tables.txt)
-for asl in $(grep -E '^[^#].*\.asl$' /src/acpi/tables.txt); do
+grep -E '^[^#].*\.asl$' /src/acpi/tables.txt | while read -r asl; do
+    # $defines is a list of separate -D flags.
     # shellcheck disable=SC2086
     iasl -vs $defines -I /src/acpi/meta-acpi -p "/work/acpi/${asl%.asl}" "/src/acpi/meta-acpi/$asl" >/dev/null \
         || { echo "iasl failed for $asl" >&2; exit 1; }
@@ -37,6 +38,8 @@ done
 ls /work/acpi/*.aml >/dev/null
 
 mkdir -p /cache/apt
+# Hooks are run by mmdebstrap with the rootfs path as $1, so most must stay unexpanded here.
+# shellcheck disable=SC2016
 mmdebstrap \
     --variant=apt \
     --components="main non-free-firmware" \
@@ -64,6 +67,7 @@ mmdebstrap \
     --customize-hook='ln -sf /run/systemd/resolve/stub-resolv.conf "$1/etc/resolv.conf"' \
     --customize-hook='rm -f "$1"/etc/ssh/ssh_host_*' \
     --customize-hook=': > "$1/etc/machine-id"; rm -f "$1/var/lib/dbus/machine-id"' \
+    --customize-hook='chroot "$1" dpkg-query -W -f="\${Package} \${Version} \${source:Package} \${source:Version}\n" > /out/packages.manifest' \
     --customize-hook='rm -rf "$1"/var/lib/apt/lists/* "$1"/var/cache/apt/*.bin' \
     "$SUITE" "$ROOT" "$MIRROR"
 
@@ -90,5 +94,5 @@ mkenvimage -r -s 0x10000 -o /out/u-boot-env.bin /work/env.txt
 cp /in/kernel/RELEASE /out/KERNEL_RELEASE
 cd /out
 sha256sum rootfs.ext4 boot.vfat u-boot-env.bin > SHA256SUMS
-chmod 0644 rootfs.ext4 boot.vfat u-boot-env.bin KERNEL_RELEASE SHA256SUMS
+chmod 0644 rootfs.ext4 boot.vfat u-boot-env.bin KERNEL_RELEASE SHA256SUMS packages.manifest
 echo "rootfs: ${used_kib} KiB used, image $(( size_kib / 1024 )) MiB; kernel ${release}"

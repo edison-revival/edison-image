@@ -11,7 +11,10 @@ set -eu
 G=/sys/kernel/config/usb_gadget/edison
 
 bind() {
-    udc=$(ls /sys/class/udc 2>/dev/null | head -n1)
+    udc=
+    for u in /sys/class/udc/*; do
+        [ -e "$u" ] && { udc=$(basename "$u"); break; }
+    done
     if [ -z "$udc" ]; then
         echo "no USB device controller yet; udev will run this again when one appears"
         exit 0

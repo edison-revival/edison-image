@@ -63,6 +63,20 @@ the reset button while Linux is running (see Notes).
 Reflashing the rootfs replaces everything in it, including WiFi settings and the `edison`
 password.
 
+## CI and tests
+
+- `.github/workflows/build.yml` builds everything on a GitHub-hosted runner on each push
+  and uploads the images (rootfs xz-compressed) as an artifact. Pushing a `v*` tag also
+  creates a release.
+- `.github/workflows/test.yml` runs the `flash.py` unit tests on Linux, macOS and Windows
+  (Python 3.9 and 3.13) and `shellcheck` on the shell scripts.
+
+Run the tests locally (standard library only, against a fake `dfu-util`):
+
+```
+uv run --no-project python -m unittest discover -s tests
+```
+
 ## Layout
 
 | Path | Purpose |
@@ -96,7 +110,28 @@ password.
   only removing power clears it. `edison-acpi-tables.service` then fails with
   "TRI_STATE_ALL not found"; unplug all power and reconnect.
 
+## Licence
+
+Our own code is under the MIT licence (`LICENSE`). Third-party files keep their licences:
+
+| Path | Licence |
+|---|---|
+| `kernel/patches/` | GPL-2.0 (they modify the Linux kernel) |
+| `kernel/fragments/edison-fw/` | MIT, from [edison-fw/meta-intel-edison](https://github.com/edison-fw/meta-intel-edison) |
+| `acpi/meta-acpi/` | MIT, Copyright (C) 2017 Intel Corporation, from [westeri/meta-acpi](https://github.com/westeri/meta-acpi) |
+
+**Built images** contain GPL software (Linux, U-Boot, Debian packages). Corresponding
+source: Linux from kernel.org at the version and checksum pinned in
+`docker/kernel.Dockerfile`, plus `kernel/patches/` and the config in each release
+(`kernel.config`); U-Boot at the commit pinned in
+[edison-recovery](https://github.com/edison-revival/edison-recovery)'s
+`docker/uboot.Dockerfile`; Debian packages at the exact versions listed in each release's
+`packages.manifest`, available from [snapshot.debian.org](https://snapshot.debian.org/).
+The Broadcom WiFi/Bluetooth firmware is redistributed unmodified under
+`LICENCE.broadcom_bcm43xx` / Debian's `firmware-brcm80211` terms.
+
 ## Credits
 
 Kernel config fragments and patches: [edison-fw/meta-intel-edison](https://github.com/edison-fw/meta-intel-edison)
-(Ferry Toth, based on Andy Shevchenko's Edison kernel work), MIT licence.
+(Ferry Toth, based on Andy Shevchenko's Edison kernel work). Arduino kit ACPI tables:
+[meta-acpi](https://github.com/westeri/meta-acpi) (Intel).
