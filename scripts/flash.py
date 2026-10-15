@@ -11,8 +11,9 @@ from edison-recovery/udev/; on Windows, the WinUSB driver for 8087:0a99).
 Usage:
     uv run scripts/flash.py [--images DIR] [--uboot FILE] [--only PART ...]
 
---images is a local build (out/image, the default) or an extracted CI
-artifact or release, which also holds u-boot.bin and rootfs.ext4.xz.
+--images is a local build (out/image) or an extracted CI artifact or release,
+which also holds u-boot.bin and rootfs.ext4.xz. The default is the script's own
+directory if it holds images (a download), else out/image (a source checkout).
 --uboot defaults to u-boot.bin in the images directory, else
 out/uboot/u-boot.bin.
 """
@@ -33,7 +34,8 @@ import time
 from pathlib import Path
 
 DEVICE = "8087:0a99"
-ROOT = Path(__file__).resolve().parent.parent
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
 DFU_UTIL = ["dfu-util"]  # command prefix; the tests point this at a fake
 WIDTH = 79  # keep output within 80 columns
 
@@ -260,6 +262,13 @@ def build_plan(
     return plan
 
 
+def default_images_dir(script_dir: Path = HERE) -> Path:
+    """The script's own directory in a downloaded image, else out/image."""
+    if (script_dir / "SHA256SUMS").is_file() and (script_dir / "boot.vfat").is_file():
+        return script_dir
+    return script_dir.parent / "out" / "image"
+
+
 def explain_interrupt(alt: str | None) -> None:
     if alt is None:
         say("\nCancelled before writing anything.")
@@ -277,7 +286,7 @@ def explain_interrupt(alt: str | None) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    parser.add_argument("--images", type=Path, default=ROOT / "out" / "image")
+    parser.add_argument("--images", type=Path, default=default_images_dir())
     parser.add_argument("--uboot", type=Path, default=None)
     parser.add_argument(
         "--only",

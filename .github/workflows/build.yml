@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Restore Debian package cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: out/cache
           key: debs-${{ hashFiles('rootfs/packages.txt') }}-${{ github.run_id }}
@@ -52,7 +52,7 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: edison-image-${{ github.sha }}
           path: dist/
@@ -66,4 +66,4 @@ jobs:
         run: |
           gh release create "$GITHUB_REF_NAME" dist/* \
             --title "edison-image $GITHUB_REF_NAME" \
-            --notes "Debian 13 for the Intel Edison. Kernel $(cat dist/KERNEL_RELEASE), U-Boot $(cat dist/UBOOT_VERSION). Flash with: uv run flash.py --images ."
+            --notes "Debian 13 for the Intel Edison. Kernel $(cat dist/KERNEL_RELEASE), U-Boot $(cat dist/UBOOT_VERSION). Extract and flash with: uv run flash.py"

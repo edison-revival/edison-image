@@ -19,23 +19,23 @@ jobs:
         os: [ubuntu-24.04, macos-latest, windows-latest]
         python: ["3.9", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0 # immutable release
       - name: Unit tests
         run: uv run --no-project --python ${{ matrix.python }} python -W error::ResourceWarning -m unittest discover -s tests -v
 
   ruff:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.0 # immutable release
       - run: uvx ruff@0.14.0 format --check .
       - run: uvx ruff@0.14.0 check .
 
   shellcheck:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: shellcheck
         run: |
           shellcheck --version

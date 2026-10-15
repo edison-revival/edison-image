@@ -111,6 +111,15 @@ class FileTests(unittest.TestCase):
         self.assertEqual(plan["rootfs"].read_bytes(), rootfs)
         self.assertEqual(plan["rootfs"].parent, self.work)
 
+    def test_default_images_dir_download_layout(self):
+        self.make_images()
+        self.assertEqual(flash.default_images_dir(self.images), self.images)
+
+    def test_default_images_dir_source_checkout(self):
+        scripts = self.tmp / "scripts"
+        scripts.mkdir()
+        self.assertEqual(flash.default_images_dir(scripts), self.tmp / "out" / "image")
+
     def test_plan_missing_file_fails(self):
         self.make_images()
         (self.images / "boot.vfat").unlink()
