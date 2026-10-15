@@ -56,9 +56,10 @@ mmdebstrap \
     --customize-hook='ln -sf brcmfmac43340-sdio.bin "$1/usr/lib/firmware/brcm/brcmfmac43340-sdio.Intel Corporation-Merrifield.bin"' \
     --customize-hook='test -e "$1/usr/lib/firmware/brcm/brcmfmac43340-sdio.bin" || { echo "firmware-brcm80211 lacks brcmfmac43340-sdio.bin" >&2; exit 1; }' \
     --customize-hook='install -d "$1/usr/lib/edison/acpi" && install -m 0644 -t "$1/usr/lib/edison/acpi/" /work/acpi/*.aml' \
-    --customize-hook='chmod 0755 "$1/usr/local/sbin/edison-gadget" "$1/usr/local/sbin/edison-acpi-tables"' \
+    --customize-hook='chmod 0755 "$1"/usr/local/sbin/edison-*' \
+    --customize-hook='mkdir -p "$1/factory"' \
     --customize-hook='for f in /usr/bin/login /usr/sbin/agetty /usr/sbin/sshd /usr/sbin/wpa_supplicant /usr/sbin/rfkill /usr/bin/gpioset /usr/sbin/i2cdetect; do test -x "$1$f" || { echo "missing $f in rootfs" >&2; exit 1; }; done' \
-    --customize-hook='chroot "$1" systemctl enable systemd-networkd systemd-resolved systemd-timesyncd edison-acpi-tables edison-gadget rfkill-unblock wpa_supplicant@wlan0 serial-getty@ttyGS0' \
+    --customize-hook='chroot "$1" systemctl enable systemd-networkd systemd-resolved systemd-timesyncd edison-acpi-tables edison-gadget edison-bt-addr rfkill-unblock wpa_supplicant@wlan0 serial-getty@ttyGS0' \
     --customize-hook='chroot "$1" groupadd -r -f gpio' \
     --customize-hook="chroot \"\$1\" useradd -m -s /bin/bash -G sudo,netdev,plugdev,dialout,gpio,i2c $USER_NAME" \
     --customize-hook='find "$1/etc/systemd" "$1/etc/udev/rules.d" -type f -perm /022 -print -exec false {} + >&2 || { echo "group/world-writable config files in rootfs" >&2; exit 1; }' \

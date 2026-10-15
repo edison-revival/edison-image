@@ -1,0 +1,25 @@
+#!/bin/sh
+# Give the Bluetooth controller its factory address. The BCM43341 otherwise reports the
+# placeholder 43:34:1B:00:1F:AC, which the kernel treats as invalid, so the controller
+# stays unconfigured and unusable. Each Edison's own address is in the factory partition.
+set -eu
+
+addr=$(head -n1 /factory/bluetooth_address | tr 'a-f' 'A-F')
+case "$addr" in
+    [0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]:[0-9A-F][0-9A-F]) ;;
+    *) echo "invalid address in /factory/bluetooth_address: $addr" >&2; exit 1 ;;
+esac
+
+# hci_uart registers hci0 a few seconds into boot.
+for _ in $(seq 100); do
+    [ -e /sys/class/bluetooth/hci0 ] && break
+    sleep 0.2
+done
+
+# A newly registered hci0 can come up soft-blocked.
+rfkill unblock bluetooth
+
+# btmgmt is an interactive shell: with stdin at EOF (as in a systemd service) it hangs
+# after sending the command. Give it a pseudo-terminal instead.
+timeout 10 script -qec "btmgmt -i hci0 public-addr $addr" /dev/null </dev/null
+echo "Bluetooth address set to $addr"

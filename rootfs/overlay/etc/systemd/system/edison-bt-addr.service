@@ -1,0 +1,14 @@
+[Unit]
+Description=Set the Bluetooth address from the factory partition
+After=bluetooth.service
+Wants=bluetooth.service
+RequiresMountsFor=/factory
+ConditionPathExists=/factory/bluetooth_address
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/edison-bt-addr
+
+[Install]
+WantedBy=bluetooth.target

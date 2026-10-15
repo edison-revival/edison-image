@@ -1,2 +1,4 @@
 # The image is smaller than the rootfs partition; x-systemd.growfs expands it on first boot.
-PARTLABEL=rootfs  /  ext4  defaults,noatime,x-systemd.growfs  0  1
+PARTLABEL=rootfs   /         ext4  defaults,noatime,x-systemd.growfs  0  1
+# Per-board data from Intel's factory (bluetooth_address, serial_number). Read-only.
+PARTLABEL=factory  /factory  ext4  ro,nofail,nosuid,nodev,noexec      0  0
