@@ -83,8 +83,9 @@ the system: `uv run flash.py --only rootfs`.
 
 ## 6. First boot
 
-The board appears as a USB network adapter (Windows 10 and 11 include the NCM driver) and
-gives your PC an address by DHCP. Then, in PowerShell:
+The board appears as a USB network adapter ("UsbNcm Host Device") and a USB serial port
+(COM*n*, for Arduino sketches), both with Windows' own drivers, and gives your PC an
+address by DHCP (tested on Windows 11). Then, in PowerShell:
 
 ```
 ssh edison@edison.local
@@ -100,5 +101,6 @@ See the README's "First steps on the board" for WiFi, time zone and locale.
 | dfu-util: "Cannot open DFU device" / `LIBUSB_ERROR_NOT_SUPPORTED` | The WinUSB driver isn't installed for `8087:0a99`: repeat step 4. |
 | "no DFU device found" | Check the cable is a data cable, it's in J16, and SW1 is towards the micro-USB ports. |
 | "missed the DFU window" | Power-cycle the board again; the flasher keeps waiting. `sudo edison-dfu` avoids the race. |
+| A device appears for a few seconds at power-on (unrecognised, or as the DFU device), then the network adapter and a COM port | Normal: that's U-Boot's DFU window on every boot. Wait for Linux to start (about 20 s). |
 
 For everything else, see the [Linux guide's table](flashing-linux.md#troubleshooting).
