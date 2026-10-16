@@ -1,0 +1,13 @@
+# Lets Arduino sketches (the gpio group) switch the header's PWM pins to their PWM
+# function, which needs root (see /usr/local/sbin/edison-pinmux).
+[Unit]
+Description=Pin function requests from Arduino sketches (PWM)
+
+[Socket]
+ListenStream=/run/edison-pinmux.sock
+SocketGroup=gpio
+SocketMode=0660
+Accept=yes
+
+[Install]
+WantedBy=sockets.target

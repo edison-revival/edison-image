@@ -1,0 +1,10 @@
+[Unit]
+Description=Switch an Arduino PWM pin to its PWM function
+# debugfs, where the pin controller's mux control is.
+After=sys-kernel-debug.mount
+
+[Service]
+ExecStart=/usr/local/sbin/edison-pinmux
+StandardInput=socket
+StandardOutput=socket
+StandardError=journal

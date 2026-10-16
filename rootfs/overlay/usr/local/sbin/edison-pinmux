@@ -1,0 +1,24 @@
+#!/bin/sh
+# Switch one of the Arduino header's PWM pins (IO3/5/6/9: SoC PWM0-3) to its PWM function,
+# for sketches, which run as the edison user. Mainline Linux doesn't apply the ACPI
+# PinFunction resources that would do this, and switching a pin's function needs root
+# (pinctrl debugfs). Run by edison-pinmux.socket for members of the gpio group: reads one
+# request ("pwm0".."pwm3") and answers "ok" or an error. Taking a pin back needs no help:
+# requesting its GPIO line returns it to GPIO mode.
+set -u
+
+PINMUX=/sys/kernel/debug/pinctrl/INTC1002:00/pinmux-select
+
+read -r request || exit 0
+case "$request" in
+    pwm[0-3]) ;;
+    *)
+        echo "error: unknown request"
+        exit 0
+        ;;
+esac
+if echo "${request}_grp $request" > "$PINMUX" 2>/dev/null; then
+    echo ok
+else
+    echo "error: can't switch the pin ($PINMUX)"
+fi
