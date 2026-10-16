@@ -9,3 +9,7 @@ defines: -DMUX_UART_2WIRE -DMUX_I2C
 # kit (expanders, level shifters, muxes). It doesn't claim IO13: arduino-leds-ds2.asl would
 # give it to the DS2 LED as a heartbeat, but then sketches couldn't use pin 13.
 arduino.asl
+# spidev on SPI5 chip select 1 (/dev/spidev5.1): SPI on the header for arduino-core-edison's
+# SPI library. CS1 itself doesn't reach the header, but it gates the buffer that passes the
+# header's MISO to SPI5 (the kit ADC shares the bus on CS0).
+spidev.asl

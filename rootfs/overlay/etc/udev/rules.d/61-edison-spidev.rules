@@ -1,0 +1,2 @@
+# Let members of the gpio group use spidev (SPI in Arduino sketches).
+SUBSYSTEM=="spidev", GROUP="gpio", MODE="0660"

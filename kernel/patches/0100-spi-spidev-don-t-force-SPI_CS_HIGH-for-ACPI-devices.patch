@@ -1,0 +1,53 @@
+From: The open-edison contributors
+Date: Fri, 16 Oct 2026 20:10:00 +1000
+Subject: [PATCH] spi: spidev: don't force SPI_CS_HIGH for ACPI devices
+
+spidev sets SPI_CS_HIGH whenever the chip select is a GPIO descriptor (and
+hides it when reading the mode), relying on gpiolib to apply the GPIO's
+polarity. For ACPI devices the SPI core doesn't: it treats the GPIO as
+active high and inverts it itself (spi_toggle_csgpiod()), so setting any
+mode through spidev left the chip select active high.
+
+Seen on the Intel Edison (Merrifield SPI5 with cs-gpios from ACPI): after
+SPI_IOC_WR_MODE the chip select idled low and went high during transfers.
+
+Only force (and hide) SPI_CS_HIGH for non-ACPI devices.
+---
+diff --git a/drivers/spi/spidev.c b/drivers/spi/spidev.c
+index 4d53c39..4967cc2 100644
+--- a/drivers/spi/spidev.c
++++ b/drivers/spi/spidev.c
+@@ -17,6 +17,7 @@
+ #include <linux/mod_devicetable.h>
+ #include <linux/module.h>
+ #include <linux/mutex.h>
++#include <linux/acpi.h>
+ #include <linux/property.h>
+ #include <linux/slab.h>
+ #include <linux/compat.h>
+@@ -380,7 +381,8 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 	case SPI_IOC_RD_MODE32:
+ 		tmp = spi->mode & SPI_MODE_MASK;
+ 
+-		if (ctlr->use_gpio_descriptors && spi_get_csgpiod(spi, 0))
++		if (ctlr->use_gpio_descriptors && spi_get_csgpiod(spi, 0) &&
++		    !is_acpi_device_node(dev_fwnode(&spi->dev)))
+ 			tmp &= ~SPI_CS_HIGH;
+ 
+ 		if (cmd == SPI_IOC_RD_MODE)
+@@ -414,7 +416,14 @@ spidev_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
+ 				break;
+ 			}
+ 
+-			if (ctlr->use_gpio_descriptors && spi_get_csgpiod(spi, 0))
++			/*
++			 * gpiolib applies a GPIO chip select's polarity for DT; for
++			 * ACPI the SPI core treats the GPIO as active high and inverts
++			 * it itself (spi_toggle_csgpiod()), so forcing SPI_CS_HIGH here
++			 * would invert the chip select.
++			 */
++			if (ctlr->use_gpio_descriptors && spi_get_csgpiod(spi, 0) &&
++			    !is_acpi_device_node(dev_fwnode(&spi->dev)))
+ 				tmp |= SPI_CS_HIGH;
+ 
+ 			tmp |= spi->mode & ~SPI_MODE_MASK;
