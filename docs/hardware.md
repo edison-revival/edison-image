@@ -15,7 +15,7 @@ Designators (J16, SW1UI2, …) are printed on the board next to each part.
 | **J3** | Micro-USB to an FTDI FT232R USB-serial chip on the module's UART2 | The Linux and U-Boot console, 115200 8N1 |
 | **J6** | Full-size USB-A, the same OTG port in host mode | USB devices (keyboard, storage, …) when SW1 selects host mode |
 | **J1** | DC barrel jack, **7–15 V** | Power; needed for USB host mode and recommended for shields |
-| **J2** | Battery header: one Li-ion/Li-Po cell (3.0–4.3 V, charged to 4.2 V at 100 mA) | Use a cell of 200 mAh or more with its own protection circuit |
+| **J2** (BATT) | 2-pin battery header: pin 1 = battery +, pin 2 = ground. One Li-ion/Li-Po cell (3.0–4.3 V, charged to 4.2 V at 100 mA) | Use a cell of 200 mAh or more with its own protection circuit. **It isn't a jumper: a jumper here shorts the charger's battery output to ground.** |
 | — | Micro-SD slot | Storage |
 | J4 | 2×3 ICSP header: MISO/SCK/MOSI (= IO12/IO13/IO11), 5 V, RESET, GND | Shields that take SPI from ICSP |
 | Headers | Arduino Uno R3 layout: IO0–IO13, A0–A5 (IO14–IO19), AREF, SDA/SCL, power | Shields |
@@ -50,10 +50,12 @@ than pressing reset; U-Boot opens a short DFU window on every boot.
 | **J9** | **IOREF**: the voltage the header's level shifters use, and the IOREF pin | **Pins 1-2: 5 V** (as shipped). Pins 2-3: 3.3 V, for 3.3 V shields. |
 | **J8** | Analog reference for A0–A5 | **Pins 1-2: IOREF** (as shipped), so A0–A5 read 0–5 V, or 0–3.3 V with J9 at 3.3 V. Pins 2-3: the external AREF pin. |
 | **J11, J12** | Which header pins get the module's four PWM outputs (the "PWM swizzler") | Default (J12 1-2, J12 3-4, J11 1-2, J11 3-4): PWM on IO3, IO5, IO6 and IO9. See below. |
+| **J13** | The battery charger's thermistor (NTC) input | **Pins 2-3: grounded** (as shipped), which turns off the charger's battery-temperature check. Pins 1-2: the input goes to pin 1, for a battery pack's own thermistor. Leave it on 2-3 unless your battery has one. |
 
-Pin 1 of J8 and J9 is marked with an arrow on the board. Pin assignments are from Intel's
-schematic: J9 pin 1 = 5 V, pin 2 = IOREF, pin 3 = 3.3 V; J8 pin 1 = IOREF, pin 2 = the ADC
-reference, pin 3 = AREF. "As shipped" was checked on one board.
+Pin 1 of J8, J9 and J13 is marked with an arrow on the board. Pin assignments are from
+Intel's schematic: J9 pin 1 = 5 V, pin 2 = IOREF, pin 3 = 3.3 V; J8 pin 1 = IOREF, pin 2 =
+the ADC reference, pin 3 = AREF; J13 pin 1 = thermistor connection, pin 2 = the LTC4067
+charger's NTC input, pin 3 = ground. "As shipped" was checked on one board.
 
 **PWM:** the module has only four PWM channels, for the six "~" pins (3, 5, 6, 9, 10, 11).
 The J11/J12 jumpers choose which four; Intel's hardware guide (Table 9) lists the
@@ -129,5 +131,7 @@ it stays high, and as an input it reads nothing.
   to 7–15 V.
 - Intel schematic *Edison for Arduino board*, H40485 rev 5 (August 2014):
   [archived copy](https://web.archive.org/web/20160417191754/http://www.intel.com:80/content/dam/support/us/en/documents/edison/sb/edison_arduino_hvm_8_26.pdf).
-  Source for the J3, J8 and J9 designators.
+  Source for the J2, J3, J8, J9 and J13 designators and pin assignments.
+- Analog Devices (Linear Technology) LTC4067 datasheet: the charger on J2; its NTC input
+  has a disable threshold, so grounding it (J13 at 2-3) turns the temperature check off.
 - Quirks: tested on real boards while developing edison-image.
