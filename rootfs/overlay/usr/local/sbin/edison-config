@@ -29,6 +29,9 @@ init() {
 make_dirs() {
     mkdir -p "$STATE/bluetooth"
     chmod 0700 "$STATE/bluetooth"
+    # The uploaded Arduino sketch (bind-mounted at /var/lib/edison-sketch), written by the
+    # edison user (UID 1000) when it uploads.
+    install -d -m 0755 -o 1000 -g 1000 "$STATE/sketch"
     if [ ! -f "$STATE/files.list" ]; then
         cat > "$STATE/files.list" <<'EOF'
 # Extra files to keep across reflashes, one absolute path per line (e.g.

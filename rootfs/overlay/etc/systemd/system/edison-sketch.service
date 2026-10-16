@@ -3,6 +3,8 @@
 [Unit]
 Description=Arduino sketch
 After=edison-acpi-tables.service edison-gadget.service edison-serial-hold.service
+# The sketch is kept on the config partition, bind-mounted here (/etc/fstab).
+RequiresMountsFor=/var/lib/edison-sketch
 ConditionPathExists=/var/lib/edison-sketch/sketch.elf
 
 [Service]

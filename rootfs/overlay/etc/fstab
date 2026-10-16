@@ -1,9 +1,11 @@
 # The image is smaller than the rootfs partition; x-systemd.growfs expands it on first boot.
 PARTLABEL=rootfs   /                ext4  defaults,noatime,x-systemd.growfs  0  1
 # Settings that survive reflashing (WiFi, SSH keys, users, hostname, time zone, locale,
-# network, Bluetooth pairings). edison-config-init formats it on first use.
+# network, Bluetooth pairings, the Arduino sketch). edison-config-init formats it on
+# first use.
 PARTLABEL=config   /var/lib/edison  ext4  defaults,noatime,nofail,x-systemd.requires=edison-config-init.service  0  2
-# Bluetooth pairings live on the config partition.
+# Bluetooth pairings and the uploaded Arduino sketch live on the config partition.
 /var/lib/edison/bluetooth  /var/lib/bluetooth  none  bind,nofail,x-systemd.requires=edison-config-dirs.service  0  0
+/var/lib/edison/sketch  /var/lib/edison-sketch  none  bind,nofail,x-systemd.requires=edison-config-dirs.service  0  0
 # Per-board data from Intel's factory (bluetooth_address, serial_number). Read-only.
 PARTLABEL=factory  /factory         ext4  ro,nofail,nosuid,nodev,noexec  0  0

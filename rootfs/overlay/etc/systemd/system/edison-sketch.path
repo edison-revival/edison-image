@@ -2,6 +2,9 @@
 # and renames it to sketch.elf, so no privileges are needed to restart it.
 [Unit]
 Description=Watch for a newly uploaded Arduino sketch
+# Watch the bind mount from the config partition, not the directory underneath it (the
+# mount is nofail, so local-fs.target doesn't wait for it).
+RequiresMountsFor=/var/lib/edison-sketch
 
 [Path]
 PathChanged=/var/lib/edison-sketch/sketch.elf

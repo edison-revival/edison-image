@@ -85,8 +85,9 @@ The eMMC has one large root filesystem (with `/home`) plus a small `config` part
 mounted at `/var/lib/edison`, which flashing never writes. It keeps:
 
 - WiFi networks, SSH host keys (no "host key changed" warnings), users, passwords, groups
-  and SSH `authorized_keys`, the hostname, time zone and locale, Bluetooth pairings, and any
-  extra systemd-networkd config you put in `/var/lib/edison/network/`;
+  and SSH `authorized_keys`, the hostname, time zone and locale, Bluetooth pairings, the
+  uploaded Arduino sketch, and any extra systemd-networkd config you put in
+  `/var/lib/edison/network/`;
 - any other files you list in `/var/lib/edison/files.list` (one absolute path per line).
 
 Settings are saved when they change and at every clean shutdown; `sudo edison-config save`

@@ -3,3 +3,12 @@ Name=wlan0
 
 [Network]
 DHCP=yes
+
+# Identify the board to the DHCP server by its WiFi MAC (fixed in the module) rather than
+# by a DUID derived from /etc/machine-id, which every reflash replaces, so the router keeps
+# handing it the same address.
+[DHCPv4]
+ClientIdentifier=mac
+
+[DHCPv6]
+DUIDType=link-layer

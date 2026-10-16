@@ -2,7 +2,7 @@
 Description=Create directories on the config partition
 DefaultDependencies=no
 RequiresMountsFor=/var/lib/edison
-Before=var-lib-bluetooth.mount local-fs.target
+Before=var-lib-bluetooth.mount var-lib-edison\x2dsketch.mount local-fs.target
 
 [Service]
 Type=oneshot
