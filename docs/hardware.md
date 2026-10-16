@@ -5,7 +5,8 @@ What the connectors, switch, buttons, jumpers and LEDs on the Arduino expansion 
 the board come from Intel's documents (see [Sources](#sources)), whose intel.com copies are
 gone; quirks come from testing this project's image on real boards.
 
-Designators (J16, SW1UI2, …) are printed on the board next to each part.
+Designators (J16, SW1UI2, …) are printed on the board next to each part. Left and right
+here are with the board the way its printing reads: USB ports on the right.
 
 ## Connectors
 
@@ -69,7 +70,7 @@ Intel's drawing of where they are: Figure 5 on
 
 | Ref | Meaning |
 |---|---|
-| **DS1** | On while the module runs, off while it's held in reset. Next to DS3, on its right with the USB ports facing left. |
+| **DS1** | On while the module runs, off while it's held in reset. Next to DS3, on its left. |
 | **DS2** | The Arduino "L" LED, on IO13 (`LED_BUILTIN`). Next to the module. |
 | **DS3** | Green: battery charging. Next to the module. |
 
