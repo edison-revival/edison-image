@@ -21,7 +21,7 @@ Allow your user to access the Edison over USB without root (both the DFU mode U-
 uses and the recovery mode, for later):
 
 ```
-curl -fsSL https://raw.githubusercontent.com/edison-revival/edison-recovery/main/udev/99-edison.rules | sudo tee /etc/udev/rules.d/99-edison.rules
+curl -fsSL https://raw.githubusercontent.com/open-edison/edison-recovery/main/udev/99-edison.rules | sudo tee /etc/udev/rules.d/99-edison.rules
 ```
 
 ```
@@ -35,7 +35,7 @@ Ubuntu add desktop users by default). Without the rule, dfu-util fails with
 ## 2. Get an image
 
 Download every file from the latest
-[release](https://github.com/edison-revival/edison-image/releases) into one folder (or
+[release](https://github.com/open-edison/edison-image/releases) into one folder (or
 extract a CI build artifact). The folder should contain `flash.py`, `SHA256SUMS`,
 `u-boot.bin`, `u-boot-env.bin`, `boot.vfat` and `rootfs.ext4.xz`.
 
@@ -62,7 +62,7 @@ It checks the files, then waits for the board. Put the board into DFU mode:
 
 - **Board already running this image:** on the board, `sudo edison-dfu`. U-Boot then waits
   for the flasher as long as needed.
-- **Anything else** (vendor image, older edison-revival builds, no Linux): power-cycle it,
+- **Anything else** (vendor image, older open-edison builds, no Linux): power-cycle it,
   or `sudo reboot` it. U-Boot opens a DFU window for a few seconds during boot; the flasher
   catches it, and if it misses, it says so and waits for the next boot.
 
@@ -96,5 +96,5 @@ See the README's "First steps on the board" for WiFi, time zone and locale.
 | `LIBUSB_ERROR_ACCESS` | The udev rule isn't installed, or your user isn't in `plugdev` (log out and back in after adding it). |
 | "no DFU device found" | Check the cable is a data cable, it's in J16, and SW1 is towards the micro-USB ports. Swap cables between J3 and J16 to rule out a bad connector. |
 | "missed the DFU window" | Reboot the board again; the flasher keeps waiting. `sudo edison-dfu` avoids the race. |
-| Nothing at all on J16, even after a power cycle, and the serial console stops at `*** Ready to receive application ***` | The bootloader is gone: recover with [edison-recovery](https://github.com/edison-revival/edison-recovery). |
+| Nothing at all on J16, even after a power cycle, and the serial console stops at `*** Ready to receive application ***` | The bootloader is gone: recover with [edison-recovery](https://github.com/open-edison/edison-recovery). |
 | After boot, `edison-acpi-tables.service` failed ("TRI_STATE_ALL not found") | The Arduino kit's I/O expander is wedged after an abrupt reset. Unplug all power and reconnect. |

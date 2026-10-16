@@ -11,7 +11,7 @@ scripts/build.sh
 
 `scripts/build.sh uboot|kernel|rootfs` builds one stage. Outputs:
 - `out/uboot/`: mainline U-Boot, built from
-  [edison-recovery](https://github.com/edison-revival/edison-recovery) at the commit pinned
+  [edison-recovery](https://github.com/open-edison/edison-recovery) at the commit pinned
   in `scripts/build.sh` (set `EDISON_RECOVERY_DIR` to use a local checkout instead)
 - `out/kernel/`: `vmlinuz`, `modules.tar.gz`, `config`
 - `out/image/`: `boot.vfat` (kernel), `rootfs.ext4`, `u-boot-env.bin`, `packages.manifest`
@@ -26,7 +26,7 @@ Then `uv run scripts/flash.py` flashes `out/`.
 | `docker/kernel.Dockerfile` | Kernel build: pinned tarball, patches, config, required-symbol check |
 | `docker/rootfs.Dockerfile` | Tooling image for the rootfs build |
 | `kernel/fragments/edison-fw/` | Config fragments from edison-fw/meta-intel-edison (MIT), unchanged |
-| `kernel/fragments/edison-revival.cfg` | Our overrides: built-in eMMC/ext4/console, systemd needs, debug off |
+| `kernel/fragments/open-edison.cfg` | Our overrides: built-in eMMC/ext4/console, systemd needs, debug off |
 | `kernel/patches/` | edison-fw patches still needed on 6.18 (8250_mid DMA, dwc3, tusb1210) |
 | `kernel/required.txt` | Symbols the build checks after `olddefconfig` |
 | `rootfs/build-rootfs.sh` | `mmdebstrap`, overlay, firmware, ACPI tables, images |
@@ -90,5 +90,5 @@ shellcheck scripts/*.sh rootfs/build-rootfs.sh kernel/check-config.sh rootfs/ove
   request a month with updates.
 - **Hardware changes need a hardware test.** Note what you tested on a real board in the
   pull request; findings go in
-  [edison-docs](https://github.com/edison-revival/edison-docs).
+  [edison-docs](https://github.com/open-edison/edison-docs).
 - **Flashing:** enter DFU with `sudo reboot`, not the reset button (see the README's Notes).

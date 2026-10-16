@@ -31,7 +31,7 @@ mode, installed once with Zadig.
 ## 2. Get an image
 
 Download every file from the latest
-[release](https://github.com/edison-revival/edison-image/releases) into one folder (or
+[release](https://github.com/open-edison/edison-image/releases) into one folder (or
 extract a CI build artifact). The folder should contain `flash.py`, `SHA256SUMS`,
 `u-boot.bin`, `u-boot-env.bin`, `boot.vfat` and `rootfs.ext4.xz`.
 
@@ -51,7 +51,7 @@ Zadig can only install the driver while the board is in DFU mode, so hold it the
 - **Board already running this image:** on the board, `sudo edison-dfu`.
 - **Otherwise:** power-cycle the board and, in the serial console, press a key when you see
   `Hit any key to stop autoboot`. At the `=>` prompt, start DFU mode and leave it running:
-  `run do_dfu` on edison-revival U-Boot, or `run do_force_flash_os` on vendor U-Boot.
+  `run do_dfu` on open-edison U-Boot, or `run do_force_flash_os` on vendor U-Boot.
 
 Then in Zadig:
 

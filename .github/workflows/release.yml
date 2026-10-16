@@ -43,9 +43,9 @@ jobs:
           **Flash:** download all files into one folder, install \`dfu-util\` and
           [uv](https://docs.astral.sh/uv/), then run \`uv run flash.py\` there and reboot the
           board into DFU mode when asked. Guides:
-          [Linux](https://github.com/edison-revival/edison-image/blob/$GITHUB_REF_NAME/docs/flashing-linux.md) ·
-          [macOS](https://github.com/edison-revival/edison-image/blob/$GITHUB_REF_NAME/docs/flashing-macos.md) ·
-          [Windows](https://github.com/edison-revival/edison-image/blob/$GITHUB_REF_NAME/docs/flashing-windows.md).
+          [Linux](https://github.com/open-edison/edison-image/blob/$GITHUB_REF_NAME/docs/flashing-linux.md) ·
+          [macOS](https://github.com/open-edison/edison-image/blob/$GITHUB_REF_NAME/docs/flashing-macos.md) ·
+          [Windows](https://github.com/open-edison/edison-image/blob/$GITHUB_REF_NAME/docs/flashing-windows.md).
 
           The first flash of this image is a clean slate: it replaces U-Boot and rewrites the
           partition table. Later flashes keep your settings.

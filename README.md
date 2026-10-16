@@ -16,7 +16,7 @@ guides are not yet tested on hardware.
   appears as a USB network adapter (NCM) and hands your computer an address by DHCP.
   The board is `192.168.2.15`, or `edison.local`.
 - A USB serial port (ACM) on the same cable, reserved for Arduino sketches as `Serial`
-  (see [arduino-core-edison](https://github.com/edison-revival/arduino-core-edison)). Log
+  (see [arduino-core-edison](https://github.com/open-edison/arduino-core-edison)). Log
   in over SSH on the same cable, or on the FTDI serial console on J3.
 - Arduino sketches run as the `edison-sketch` service from `/var/lib/edison-sketch/`,
   restarted automatically when a new one is uploaded; the board advertises itself to the
@@ -30,9 +30,9 @@ guides are not yet tested on hardware.
 ## Get an image
 
 - **Releases:** download from the
-  [releases page](https://github.com/edison-revival/edison-image/releases).
+  [releases page](https://github.com/open-edison/edison-image/releases).
 - **Latest build:** each push to `main` builds the image in CI. Open the newest successful
-  [build run](https://github.com/edison-revival/edison-image/actions/workflows/build.yml)
+  [build run](https://github.com/open-edison/edison-image/actions/workflows/build.yml)
   and download its `edison-image-*` artifact (kept for 7 days).
 - **From source:** see [CONTRIBUTING.md](CONTRIBUTING.md).
 
@@ -53,7 +53,7 @@ uv run flash.py
 
 and reboot the board into DFU mode when asked (`sudo edison-dfu` on a board already running
 this image). The board must already run U-Boot with working DFU: a board recovered with
-[edison-recovery](https://github.com/edison-revival/edison-recovery), or with the vendor
+[edison-recovery](https://github.com/open-edison/edison-recovery), or with the vendor
 U-Boot.
 
 > **The first flash is a clean slate.** It replaces U-Boot and rewrites the partition
@@ -139,7 +139,7 @@ Our own code is under the MIT licence (`LICENSE`). Third-party files keep their 
 source: Linux from kernel.org at the version and checksum pinned in
 `docker/kernel.Dockerfile`, plus `kernel/patches/` and the config in each release
 (`kernel.config`); U-Boot at the commit pinned in
-[edison-recovery](https://github.com/edison-revival/edison-recovery)'s
+[edison-recovery](https://github.com/open-edison/edison-recovery)'s
 `docker/uboot.Dockerfile`; Debian packages at the exact versions listed in each release's
 `packages.manifest`, available from [snapshot.debian.org](https://snapshot.debian.org/).
 The Broadcom WiFi/Bluetooth firmware is redistributed unmodified under

@@ -24,7 +24,7 @@ RUN for p in /patches/*.patch; do echo "applying ${p##*/}"; patch -p1 --forward 
 COPY kernel/fragments/ /fragments/
 COPY kernel/required.txt kernel/check-config.sh /config/
 RUN scripts/kconfig/merge_config.sh -m arch/x86/configs/x86_64_defconfig \
-      /fragments/edison-fw/*.cfg /fragments/edison-revival.cfg \
+      /fragments/edison-fw/*.cfg /fragments/open-edison.cfg \
  && make olddefconfig \
  && sh /config/check-config.sh .config /config/required.txt
 

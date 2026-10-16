@@ -18,7 +18,7 @@ USB driver for DFU mode.
 ## 2. Get an image
 
 Download every file from the latest
-[release](https://github.com/edison-revival/edison-image/releases) into one folder (or
+[release](https://github.com/open-edison/edison-image/releases) into one folder (or
 extract a CI build artifact). The folder should contain `flash.py`, `SHA256SUMS`,
 `u-boot.bin`, `u-boot-env.bin`, `boot.vfat` and `rootfs.ext4.xz`.
 

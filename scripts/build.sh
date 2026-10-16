@@ -10,7 +10,7 @@
 set -euo pipefail
 
 # edison-recovery owns the U-Boot build (and its OSIP/layout fixes).
-EDISON_RECOVERY_URL=https://github.com/edison-revival/edison-recovery.git
+EDISON_RECOVERY_URL=https://github.com/open-edison/edison-recovery.git
 EDISON_RECOVERY_COMMIT=8af50cf04f77d6e33b9a70dead0bf6d9fe0d43b2
 
 root="$(cd "$(dirname "$0")/.." && pwd)"

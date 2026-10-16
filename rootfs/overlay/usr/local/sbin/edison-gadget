@@ -58,7 +58,7 @@ host_addr=$(mac "06$(echo "$hash" | cut -c11-20)")
 
 mkdir -p strings/0x409
 echo "$hash" > strings/0x409/serialnumber
-echo "edison-revival" > strings/0x409/manufacturer
+echo "open-edison" > strings/0x409/manufacturer
 echo "Intel Edison" > strings/0x409/product
 
 mkdir -p configs/c.1/strings/0x409
