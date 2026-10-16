@@ -3,7 +3,15 @@ name: build
 on:
   push:
     branches: [main]
+    paths-ignore: # documentation-only changes don't need a build
+      - "**.md"
+      - "docs/**"
+      - LICENSE
   pull_request:
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - LICENSE
   workflow_dispatch:
   workflow_call: # release.yml builds tags through this workflow
 
