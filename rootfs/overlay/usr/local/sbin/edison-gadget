@@ -68,6 +68,12 @@ echo 250 > configs/c.1/MaxPower
 mkdir -p functions/ncm.usb0 functions/acm.usb0
 echo "$dev_addr" > functions/ncm.usb0/dev_addr
 echo "$host_addr" > functions/ncm.usb0/host_addr
+# The serial port is for sketches, not a modem: don't declare AT commands (the default),
+# or hosts' ModemManager probes it with AT commands whenever the board appears. Only
+# settable before the function is linked into the configuration.
+if [ -e functions/acm.usb0/protocol ]; then
+    echo 0 > functions/acm.usb0/protocol
+fi
 
 ln -s functions/ncm.usb0 configs/c.1/
 ln -s functions/acm.usb0 configs/c.1/
