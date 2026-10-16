@@ -124,6 +124,11 @@ Intel's drawing of where they are: Figure 5 on
   [edison-recovery](https://github.com/open-edison/edison-recovery). The recovery
   window (USB `8086:e005`) lasts under a second per boot, which is why recovery needs a
   native Linux host rather than a VM.
+- **Too many I2C pull-ups stop the header's I2C bus.** SDA/SCL reach the header through
+  MOSFET level shifters with 4.7 kΩ pull-ups to IOREF. Most breakout boards add their own
+  pull-ups; with two such boards on the bus (tested: an MPU6050 board and an SSD1306
+  display, each fine alone) nothing answers at all. Use one board's pull-ups at most:
+  remove the others' (often a solder jumper, or the resistors next to SDA/SCL).
 - **USB host mode needs the DC supply** (see SW1).
 - **The watchdog's panic margin.** The SCU watchdog driver raises a panic 15 s before its
   timeout and can't change the timeout once running. edison-image sets systemd's runtime
