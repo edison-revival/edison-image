@@ -31,12 +31,14 @@ SW1 routes the module's single USB port to one of the two connectors:
 
 ## Buttons
 
-| Ref | Name | What it does |
+From the board edge inwards: **RM, FW, PWR, SHLD RST**, then **RESET** further in.
+
+| Ref | Label | What it does |
 |---|---|---|
-| **SW1UI5** | System reset (RESET) | Resets the module (an abrupt reset) and, per Intel, the I/O expanders. **Avoid it while Linux runs**: see [Quirks](#quirks). |
-| **SW1UI1** | Shield reset | Pulls the shield header's RESET pin low; doesn't affect the module |
-| **SW1UI2** | Power (PWR) | From off, **hold 3 s** to power on. While running, **hold 10 s or more** to force power off. (Intel's 2–7 s "access point mode" was a feature of Intel's own software and doesn't apply to edison-image.) |
-| SW1UI3, SW1UI4 | FWR_RCVR, RCVR_MODE | "For factory use only" per Intel; no documented use. Recovery doesn't need them: see [edison-recovery](https://github.com/open-edison/edison-recovery). |
+| **SW1UI5** | RESET (system reset) | Resets the module (an abrupt reset) and, per Intel, the I/O expanders. **Avoid it while Linux runs**: see [Quirks](#quirks). |
+| **SW1UI1** | SHLD RST (shield reset) | Pulls the shield header's RESET pin low; doesn't affect the module |
+| **SW1UI2** | PWR (power) | From off, **hold 3 s** to power on. While running, **hold 10 s or more** to force power off. (Intel's 2–7 s "access point mode" was a feature of Intel's own software and doesn't apply to edison-image.) |
+| SW1UI3, SW1UI4 | FW (firmware recovery), RM (recovery mode) | "For factory use only" per Intel; no documented use. Recovery doesn't need them: see [edison-recovery](https://github.com/open-edison/edison-recovery). |
 
 To enter DFU mode for flashing, run `sudo edison-dfu` (or `sudo reboot`) on the board rather
 than pressing reset; U-Boot opens a short DFU window on every boot.
@@ -45,11 +47,13 @@ than pressing reset; U-Boot opens a short DFU window on every boot.
 
 | Ref | Sets | Positions |
 |---|---|---|
-| **J9** | **IOREF**: the voltage the header's level shifters use, and the IOREF pin | Jumper to 5 V for 5 V shields, to 3.3 V for 3.3 V shields |
-| **J8** | Analog reference for A0–A5 | IOREF (0–3.3 V or 0–5 V range, following J9) or the external AREF pin |
+| **J9** | **IOREF**: the voltage the header's level shifters use, and the IOREF pin | **Pins 1-2: 5 V** (as shipped). Pins 2-3: 3.3 V, for 3.3 V shields. |
+| **J8** | Analog reference for A0–A5 | **Pins 1-2: IOREF** (as shipped), so A0–A5 read 0–5 V, or 0–3.3 V with J9 at 3.3 V. Pins 2-3: the external AREF pin. |
 | **J11, J12** | Which header pins get the module's four PWM outputs (the "PWM swizzler") | Default (J12 1-2, J12 3-4, J11 1-2, J11 3-4): PWM on IO3, IO5, IO6 and IO9. See below. |
 
-Intel's documents don't state the factory positions of J9 and J8; check your board.
+Pin 1 of J8 and J9 is marked with an arrow on the board. Pin assignments are from Intel's
+schematic: J9 pin 1 = 5 V, pin 2 = IOREF, pin 3 = 3.3 V; J8 pin 1 = IOREF, pin 2 = the ADC
+reference, pin 3 = AREF. "As shipped" was checked on one board.
 
 **PWM:** the module has only four PWM channels, for the six "~" pins (3, 5, 6, 9, 10, 11).
 The J11/J12 jumpers choose which four; Intel's hardware guide (Table 9) lists the
