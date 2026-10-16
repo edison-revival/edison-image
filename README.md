@@ -104,6 +104,9 @@ update installed software with `apt` rather than by reflashing.
 
 ## Notes
 
+See **[docs/hardware.md](docs/hardware.md)** for what the board's connectors, switch,
+buttons, jumpers and LEDs do, and its known quirks.
+
 - **Use `sudo edison-dfu` or `sudo reboot`, not the reset button:** an abrupt reset while
   Linux is running (the reset button, and presumably a watchdog reset) can leave the kit's
   I/O expander at I2C-1 0x20 unresponsive, because the expanders stay powered while the SoC
