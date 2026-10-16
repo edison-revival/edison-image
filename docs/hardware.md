@@ -37,7 +37,7 @@ From the board edge inwards: **RM, FW, PWR, SHLD RST**, then **RESET** further i
 |---|---|---|
 | **SW1UI5** | RESET (system reset) | Resets the module (an abrupt reset) and, per Intel, the I/O expanders. **Avoid it while Linux runs**: see [Quirks](#quirks). |
 | **SW1UI1** | SHLD RST (shield reset) | Pulls the shield header's RESET pin low; doesn't affect the module |
-| **SW1UI2** | PWR (power) | From off, **hold 3 s** to power on. While running, **hold 10 s or more** to force power off. (Intel's 2–7 s "access point mode" was a feature of Intel's own software and doesn't apply to edison-image.) |
+| **SW1UI2** | PWR (power) | While running, a **short press** shuts Linux down cleanly and powers off (tested on edison-image), the safe alternative to RESET. From off, **hold 3 s** to power on. While running, **hold 10 s or more** to force power off. (Intel's 2–7 s "access point mode" was a feature of Intel's own software and doesn't apply to edison-image.) |
 | SW1UI3, SW1UI4 | FW (firmware recovery), RM (recovery mode) | "For factory use only" per Intel; no documented use. Recovery doesn't need them: see [edison-recovery](https://github.com/open-edison/edison-recovery). |
 
 To enter DFU mode for flashing, run `sudo edison-dfu` (or `sudo reboot`) on the board rather
