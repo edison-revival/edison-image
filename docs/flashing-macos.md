@@ -1,9 +1,5 @@
 # Flashing from macOS
 
-> **Not yet tested on hardware.** This guide follows the documented behaviour of the tools
-> (dfu-util and the board's USB modes need no driver on macOS). If you try it, please
-> report what worked or didn't in an issue.
-
 ## 1. Install the tools (once)
 
 With [Homebrew](https://brew.sh):
@@ -35,7 +31,9 @@ extract a CI build artifact). The folder should contain `flash.py`, `SHA256SUMS`
 
   (Quit `screen` with Ctrl+A, then K.)
 
-macOS may ask whether to allow the new USB accessory; allow it.
+macOS asks whether to allow each new USB accessory (**Allow accessory to connect**):
+allow the board's DFU device, its network and serial ports, and the J3 console. It may ask
+again after a flash that changes how the board describes itself over USB; allow it again.
 
 ## 4. Flash
 
@@ -53,11 +51,14 @@ It checks the files, then waits for the board. Put the board into DFU mode:
 
 Don't use the reset button while Linux is running (see the README's Notes).
 
-The first flash takes about 3 minutes in two stages, with a reset (or two) in between.
+A flash takes about 2½ minutes (tested on a Mac: 2:22), in two stages with a reset (or two)
+in between.
 **It erases the old system completely.** Later flashes keep your settings; to update only
 the system: `uv run flash.py --only rootfs`.
 
 ## 5. First boot
+
+Allow the accessory if macOS asks again.
 
 The board appears as a USB network adapter ("Intel Edison") and gives your Mac an address
 by DHCP. Then:
