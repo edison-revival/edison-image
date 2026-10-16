@@ -4,7 +4,7 @@ Debian 13 (trixie) for the Intel Edison (Kit for Arduino), on a mainline LTS ker
 booted by mainline U-Boot.
 
 **Status:** boots and passes the hardware checks (serial, USB networking, SSH, WiFi,
-Bluetooth, I2C, GPIO) on a real board. Flashing is tested from Linux and macOS; the Windows guide is not yet tested on hardware.
+Bluetooth, I2C, GPIO) on a real board. Flashing is tested from Linux, macOS and Windows.
 
 ## What you get
 

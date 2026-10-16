@@ -1,9 +1,5 @@
 # Flashing from Windows
 
-> **Not yet tested on hardware.** This guide follows the documented behaviour of
-> dfu-util, Zadig and Windows' built-in USB drivers. If you try it, please report what
-> worked or didn't in an issue.
-
 Windows needs one extra step compared with Linux and macOS: a driver for the board's DFU
 mode, installed once with Zadig.
 
@@ -53,7 +49,8 @@ Zadig can only install the driver while the board is in DFU mode, so hold it the
   `Hit any key to stop autoboot`. At the `=>` prompt, start DFU mode and leave it running:
   `run do_dfu` on open-edison U-Boot, or `run do_force_flash_os` on vendor U-Boot.
 
-Then in Zadig:
+Then in Zadig (`dfu-util -l` afterwards should list the board's partitions: `u-boot0`,
+`boot`, `rootfs` and so on):
 
 1. *Options* → **List All Devices**.
 2. Select **USB download gadget** (USB ID `8087 0A99`).
@@ -77,7 +74,8 @@ next one if it misses).
 
 Don't use the reset button while Linux is running (see the README's Notes).
 
-The first flash takes about 3 minutes in two stages, with a reset (or two) in between.
+A flash takes about 2½ minutes (tested on Windows 11: 2:40), in two stages with a reset (or
+two) in between.
 **It erases the old system completely.** Later flashes keep your settings; to update only
 the system: `uv run flash.py --only rootfs`.
 
