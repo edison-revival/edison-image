@@ -98,7 +98,8 @@ it stays high, and as an input it reads nothing.
   is removed, though Intel's guide says the button resets the expanders. Symptoms:
   `edison-acpi-tables.service` fails with "TRI_STATE_ALL not found", and many header pins
   don't work. **Fix: unplug all power (DC and both USB cables) and reconnect.** Avoid it by
-  using `sudo reboot`, `sudo poweroff` or `sudo edison-dfu`. A watchdog reset is probably
+  using `sudo reboot`, `sudo poweroff`, `sudo edison-dfu` or a short press of PWR. A
+  watchdog reset is probably
   just as abrupt.
 - **A brief unknown or DFU device at every power-on.** U-Boot opens a 3-second DFU window
   (`8087:0a99`) on each boot, before Linux brings up the network and serial ports. Hosts may
