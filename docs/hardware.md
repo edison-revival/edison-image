@@ -64,6 +64,9 @@ it stays high, and as an input it reads nothing.
 
 ## LEDs
 
+Intel's drawing of where they are: Figure 5 on
+[page 18 of the hardware guide](https://web.archive.org/web/20181010021857/https://www.intel.com/content/dam/support/us/en/documents/edison/sb/edison-arduino-hardware-guide.pdf#page=18).
+
 | Ref | Meaning |
 |---|---|
 | **DS1** | On while the module runs, off while it's held in reset. Next to DS3, on its right with the USB ports facing left. |
