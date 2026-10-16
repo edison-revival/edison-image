@@ -61,7 +61,8 @@ charger's NTC input, pin 3 = ground. "As shipped" was checked on one board.
 **PWM:** the module has only four PWM channels, for the six "~" pins (3, 5, 6, 9, 10, 11).
 The J11/J12 jumpers choose which four; Intel's hardware guide (Table 9) lists the
 combinations. A pin whose jumper is moved away has no function left: driven as an output
-it stays high, and as an input it reads nothing.
+it stays high, and as an input it reads nothing. arduino-core-edison's `analogWrite()`
+assumes the default jumpers: PWM on ~3, ~5, ~6 and ~9, at 490 Hz (tested on all four).
 
 ## LEDs
 
