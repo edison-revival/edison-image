@@ -39,6 +39,16 @@ gpioset -t0 MUX18_DIR=0 || true
 # pins to their GPIOs instead. With SPI enabled on the header (MUX_SPI), the overlay holds
 # these lines and this does nothing.
 gpioset -t0 SPI_CLK_SEL=0 SPI_TXD_SEL=0 SPI_RXD_SEL=0 SPI_FS_SEL=0 2>/dev/null || true
+# The ADC's driver sends its settings (the 0-2xREF range, so full scale is IOREF) only when
+# it probes, which happened when the overlay loaded, before its bus was isolated: the
+# ADC missed them and stays in its power-on range (full scale half IOREF). Probe it again.
+adc=/sys/bus/spi/drivers/ads7950
+for dev in "$adc"/spi-*; do
+    [ -e "$dev" ] || continue
+    name=$(basename "$dev")
+    echo "$name" > "$adc/unbind"
+    echo "$name" > "$adc/bind"
+done
 # libgpiod v2 only guarantees a value while gpioset holds the line: pulse it low briefly,
 # then keep holding it high (the process stays in this unit's cgroup).
 timeout 0.2 gpioset TRI_STATE_ALL=0 || true

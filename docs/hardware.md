@@ -89,7 +89,10 @@ Intel's drawing of where they are: Figure 5 on
 
 - Every header pin goes through a level shifter from the module's 1.8 V to IOREF (J9), and
   can source or sink up to 24 mA at 3.3 V or 32 mA at 5 V. Optional pull-ups are 47 kΩ.
-- A0–A5 are read by a 12-bit ADC (TI ADS7951), switched with the digital function.
+- A0–A5 are read by a 12-bit ADC (TI ADS7951), switched with the digital function. Its
+  reference is IOREF halved (J8 on IOREF), and edison-image sets its 2× range, so full
+  scale is IOREF: on USB power that's the 5 V rail at about 4.5 V. (A4/A5 are I2C in
+  edison-image, so only A0–A3 are analog inputs.)
 - **IO0/IO1 are UART1** (`Serial1` in Arduino), not the console: the console is UART2 on J3.
 - **In edison-image** (fixed by the ACPI tables it loads at boot):
   - IO0/IO1 are UART1 and A4/A5 are I2C-6 (`Serial1` and `Wire`), so those pins can't be
