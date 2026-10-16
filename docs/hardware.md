@@ -66,7 +66,7 @@ it stays high, and as an input it reads nothing.
 
 | Ref | Meaning |
 |---|---|
-| **DS1** | Per Intel: on while the module runs, off while it's held in reset. **On a board running edison-image it stays off**; cause not yet known (it's lit through a MOSFET from the module's `RESET_OUT#` signal at 1.8 V). Next to DS3, on its left with the USB ports facing left. |
+| **DS1** | On while the module runs, off while it's held in reset. Next to DS3, on its right with the USB ports facing left. |
 | **DS2** | The Arduino "L" LED, on IO13 (`LED_BUILTIN`). Next to the module. |
 | **DS3** | Green: battery charging. Next to the module. |
 
